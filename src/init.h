@@ -9,7 +9,7 @@
 # include <X11/Xlocale.h>
 #else
 # ifdef HAVE_SETLOCALE
-#  include <locale.h>
+#  include <clocale>
 # endif
 #endif				/* HAVE_XLOCALE */
 
@@ -55,11 +55,11 @@
 
 # define SET_TTYMODE(fd,tt)				\
 	tt->sg.sg_ispeed = tt->sg.sg_ospeed = BAUDRATE,	\
-	ioctl (fd, TIOCSETP, &(tt->sg)),		\
-	ioctl (fd, TIOCSETC, &(tt->tc)),		\
-	ioctl (fd, TIOCSLTC, &(tt->lc)),		\
-	ioctl (fd, TIOCSETD, &(tt->line)),		\
-	ioctl (fd, TIOCLSET, &(tt->local))
+	ioctl (fd, TIOCSETP, & (tt->sg)),		\
+	ioctl (fd, TIOCSETC, & (tt->tc)),		\
+	ioctl (fd, TIOCSLTC, & (tt->lc)),		\
+	ioctl (fd, TIOCSETD, & (tt->line)),		\
+	ioctl (fd, TIOCLSET, & (tt->local))
 #endif				/* HAVE_TERMIOS_H */
 
 /* use the fastest baud-rate */
