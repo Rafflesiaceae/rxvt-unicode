@@ -924,58 +924,8 @@ struct mbstate
   mbstate_t mbs;
 
   operator mbstate_t *() { return &mbs; }
-  void reset () { memset (&mbs, 0, sizeof (mbs)); }
+  void reset () { MEMSET (&mbs, 0, sizeof (mbs)); }
   mbstate () { reset (); }
-};
-
-/****************************************************************************/
-
-#define UNICODE_MASK 0x1fffffUL
-
-#if UNICODE_3
-# define COMPOSE_LO 0x110000UL
-# define COMPOSE_HI 0x1fffffUL
-# define IS_COMPOSE(n) ((int32_t)(n) >= COMPOSE_LO)
-#else
-# if ENABLE_PERL
-#  define COMPOSE_LO 0xe000UL // our _own_ functions don't like (illegal) surrogates
-#  define COMPOSE_HI 0xf8ffUL // in utf-8, so use private use area only
-# else
-#  define COMPOSE_LO 0xd800UL
-#  define COMPOSE_HI 0xf8ffUL
-# endif
-# define IS_COMPOSE(n) IN_RANGE_INC ((n), COMPOSE_LO, COMPOSE_HI)
-#endif
-
-#if ENABLE_COMBINING
-// compose chars are used to represent composite characters
-// that are not representable in unicode, as well as characters
-// not fitting in the BMP.
-struct compose_char
-{
-  // c1 can be any character != NOCHAR, including another compose character
-  // c2 must always be a zero-width character or NOCHAR, in case
-  // this just extends beyond the BMP.
-  unicode_t c1, c2;
-
-  compose_char (unicode_t c1, unicode_t c2)
-  : c1(c1), c2(c2)
-  { }
-};
-
-struct rxvt_composite_vec
-{
-  vector<compose_char> v;
-
-  text_t compose (unicode_t c1, unicode_t c2 = NOCHAR);
-  template<typename T> int expand (unicode_t c, T *r);
-  int expand (unicode_t c) { return expand (c, (text_t *)0); }
-  compose_char *operator [](text_t c)
-  {
-    return c >= COMPOSE_LO && c < COMPOSE_LO + v.size ()
-           ? &v[c - COMPOSE_LO]
-           : 0;
-  }
 };
 
 extern class rxvt_composite_vec rxvt_composite;

@@ -1,5 +1,5 @@
-/*----------------------------------------------------------------------*
- * File:        main.C
+/*--------------------------------*-C-*---------------------------------*;
+ * File:        main.c
  *----------------------------------------------------------------------*
  *
  * All portions of code are copyright by their respective author/s.
@@ -445,7 +445,6 @@ rxvt_term::init (int argc, const char *const *argv)
 #endif
 
 #if 0
-#ifdef DEBUG_X
   XSynchronize (display->display, True);
 #endif
 #endif
@@ -1912,7 +1911,8 @@ rxvt_term::im_cb ()
     return;
 
   if (rs[Rs_imLocale])
-    SET_LOCALE (rs[Rs_imLocale]);
+    rxvt_set_locale (rs[Rs_imLocale]);
+#endif
 
   p = rs[Rs_inputMethod];
   if (p && *p)
@@ -1952,7 +1952,8 @@ rxvt_term::im_cb ()
 
 done:
   if (rs[Rs_imLocale])
-    SET_LOCALE (locale);
+    rxvt_set_locale (locale);
+#endif
 }
 
 void

@@ -1248,8 +1248,8 @@ rxvt_term::pointer_unblank ()
   XDefineCursor (dpy, vt, TermWin_cursor);
   recolor_cursor ();
 
-#ifdef POINTER_BLANK
-  hidden_pointer = 0;
+      wchar_t wc;
+      size_t len = mbrtowc (&wc, (char *)cmdbuf_ptr, cmdbuf_endp - cmdbuf_ptr, mbstate);
 
   if (option (Opt_pointerBlank))
     pointer_ev.start (pointerBlankDelay);

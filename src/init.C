@@ -1145,26 +1145,10 @@ rxvt_term::set_locale (const char *locale)
   set_environ (env);
 
   free (this->locale);
-  this->locale = setlocale (LC_CTYPE, locale);
-
-  if (!this->locale)
-    {
-      if (*locale)
-        {
-          rxvt_warn ("unable to set locale \"%s\", using C locale instead.\n", locale);
-          setlocale (LC_CTYPE, "C");
-        }
-      else
-        rxvt_warn ("default locale unavailable, check LC_* and LANG variables. Continuing.\n");
-
-      this->locale = (char *)"C"; /* strdup'ed below */
-    }
-
-
-  this->locale = strdup (this->locale);
-  SET_LOCALE (this->locale);
+  this->locale = rxvt_strdup (setlocale (LC_CTYPE, ""));
+  rxvt_set_locale (this->locale);
   mbstate.reset ();
-
+#endif
 #if HAVE_NL_LANGINFO
   char *codeset = nl_langinfo (CODESET);
   // /^UTF.?8/i

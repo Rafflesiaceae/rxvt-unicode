@@ -892,8 +892,7 @@ rxvt_font_xft::draw (int x, int y,
                      const text_t *text, int len,
                      int fg, int bg)
 {
-  if (!d)
-    d = XftDrawCreate (DISPLAY, DRAWABLE, r->display->visual, r->display->cmap);
+  d = XftDrawCreate (DISPLAY, DRAWABLE, r->display->visual, r->display->cmap);
 
   if (bg >= 0 && bg != Color_bg)
     XftDrawRect (d, &r->PixColors[bg].c, x, y, r->TermWin.fwidth * len, r->TermWin.fheight);
