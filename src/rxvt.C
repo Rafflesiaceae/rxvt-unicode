@@ -1,17 +1,24 @@
-#include "rxvtlib.h"
-#include "iom.h"
+#include "../config.h"
+#include "rxvt.h"
 
 /*----------------------------------------------------------------------*/
-/* main() */
+/* main () */
 int
-main(int argc, const char *const *argv)
-{
-  rxvt_init_signals ();
+main (int argc, const char *const *argv)
+try
+  {
+    rxvt_init_signals ();
 
-  if (!rxvt_init(argc, argv))
+    rxvt_term *t = new rxvt_term;
+
+    if (!t->init (argc, argv))
+      return EXIT_FAILURE;
+
+    iom.loop ();
+
+    return EXIT_SUCCESS;
+  }
+catch (const class rxvt_failure_exception &e)
+  {
     return EXIT_FAILURE;
-
-  iom.loop ();
-
-  return EXIT_SUCCESS;
-}
+  }
