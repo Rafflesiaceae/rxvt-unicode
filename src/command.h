@@ -5,7 +5,7 @@
 #ifndef COMMAND_H_
 #define COMMAND_H_
 
-#define STRING_MAX	512	/* max string size for process_rxvt_xterm_seq() */
+#define STRING_MAX	1024	/* max string size for process_rxvt_xterm_seq() */
 #define ESC_ARGS	32	/* max # of args for esc sequences */
 
 #ifdef OFFIX_DND
@@ -75,7 +75,7 @@
  * software in question is broken enough to be case insensitive to the 'c'
  * character in the answerback string, we make the distinguishing
  * characteristic be capitalization of that character. The length of the
- * two strings should be the same so that identical read(2) calls may be
+ * two strings should be the same so that identical read (2) calls may be
  * used.
  */
 #define VT100_ANS	"\033[?1;2c"	/* vt100 answerback */
