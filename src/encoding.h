@@ -3,8 +3,6 @@
 
 #include <inttypes.h>
 
-typedef uint32_t unicode_t;
-
 // order must match the table in encoding.C(!)
 enum codeset {
   CS_UNKNOWN = 0,
@@ -63,9 +61,8 @@ enum codeset {
 codeset codeset_from_name (const char *name);
 
 enum {
-  ZERO_WIDTH_CHAR  = 0x200b,
-  REPLACEMENT_CHAR = 0xfffd,
-  NOCHAR           = 0xffff, // must be invalid in ANY codeset (!)
+  ZERO_WIDTH_CHAR = 0x200b,
+  NOCHAR = 65535, // must be invalid in ANY codeset (!)
 };
 
 struct rxvt_codeset_conv
