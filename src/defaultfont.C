@@ -430,7 +430,7 @@ rxvt_font_x11::set_properties (rxvt_fontprop &p, const char *name)
 
   if (f)
     {
-      // the font should really exists now. if not, we have a problem
+      // the font should really exist now. if not, we have a problem
       // (e.g. if the user did xset fp rehash just when we were searching fonts).
       // in that case, just return garbage.
       bool ret = set_properties (p, f);
@@ -944,7 +944,7 @@ rxvt_font_xft::draw (int x, int y,
 /////////////////////////////////////////////////////////////////////////////
 
 rxvt_fontset::rxvt_fontset (rxvt_t r)
-: r(r)
+: r (r)
 {
   clear ();
 }
@@ -957,7 +957,7 @@ rxvt_fontset::~rxvt_fontset ()
 void
 rxvt_fontset::clear ()
 {
-  for (rxvt_font **i = fonts.begin (); i != fonts.end(); i++)
+  for (rxvt_font **i = fonts.begin (); i != fonts.end (); i++)
     FONT_UNREF (*i);
 
   fonts.clear ();
@@ -1086,7 +1086,7 @@ rxvt_fontset::populate (const char *desc)
   // we currently need a base-font, no matter what
   if ((int)fonts.size () <= base_id || !realize_font (base_id))
     {
-      puts ("unable to load specified font(s), falling back to 'fixed'\n");
+      puts ("unable to load specified font (s), falling back to 'fixed'\n");
       add_fonts ("fixed");
       base_id = fonts.size () - 1;
     }

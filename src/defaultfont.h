@@ -49,7 +49,7 @@ struct rxvt_font {
   }
 
   rxvt_font () { name = 0; }
-  ~rxvt_font () { clear (); free (name); };
+  ~rxvt_font () { free (name); };
 
   void clear_rect (int x, int y, int w, int h, int color);
 
@@ -65,9 +65,7 @@ struct rxvt_font {
                      int fg, int bg) = 0;
 };
 
-//#define FONT_REF(obj) (obj)->refcnt++
-//#define FONT_UNREF(obj) if (!--(obj)->refcnt) delete (obj)
-#define FONT_UNREF(f) delete f
+#define FONT_UNREF(f) do { (f)->clear (); delete (f); } while (0)
 
 struct rxvt_fallback_font;
 
@@ -80,7 +78,7 @@ struct rxvt_fontset {
   void populate (const char *desc);
   int find_font (uint32_t unicode);
 
-  rxvt_font *operator [](int id) const
+  rxvt_font *operator [] (int id) const
   {
     return fonts[id];
   }
