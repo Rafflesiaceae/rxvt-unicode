@@ -101,6 +101,24 @@ const struct rxvt_fallback_font {
 
 /////////////////////////////////////////////////////////////////////////////
 
+#if XFT
+rxvt_drawable::~rxvt_drawable ()
+{
+  if (xftdrawable)
+    XftDrawDestroy (xftdrawable);
+}
+
+rxvt_drawable::operator XftDraw *()
+{
+  if (!xftdrawable)
+    xftdrawable = XftDrawCreate (display->display, drawable, display->visual, display->cmap);
+
+  return xftdrawable;
+}
+#endif
+
+/////////////////////////////////////////////////////////////////////////////
+
 static void *enc_buf;
 static uint32_t enc_len;
 

@@ -6,7 +6,7 @@
  * Copyright (c) 1996      mj olesen <olesen@me.QueensU.CA> Queen's Univ at Kingston
  * Copyright (c) 1997,1998 Oezguer Kesim <kesim@math.fu-berlin.de>
  * Copyright (c) 1998-2000 Geoff Wing <gcw@pobox.com>
- * Copyright (c) 2003-2006 Marc Lehmann <schmorp@schmorp.de>
+ * Copyright (c) 2003-2004 Marc Lehmann <pcg@goof.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,246 +35,87 @@ operator new (size_t s)
   return rxvt_malloc (s);
 }
 
+/* EXTPROTO */
+char *
+rxvt_r_basename (const char *str)
+{
+  char *base = STRRCHR (str, '/');
+
+  return (char *) (base ? base + 1 : str);
+}
+
+/*
+ * Print an error message
+ */
 void
-operator delete (void *p) noexcept
+rxvt_print_error (const char *fmt,...)
 {
-  free (p);
+  va_list arg_ptr;
+
+  va_start (arg_ptr, fmt);
+  fprintf (stderr, APL_NAME ": ");
+  vfprintf (stderr, fmt, arg_ptr);
+  fprintf (stderr, "\n");
+  va_end (arg_ptr);
 }
 
-char *
-rxvt_wcstombs (const wchar_t *str, int len)
+/*
+ * Print an error message
+ */
+/* EXTPROTO */
+int
+rxvt_Str_match (const char *s1, const char *s2)
 {
-  if (len < 0) len = wcslen (str);
+  int n = STRLEN (s2);
 
-  mbstate mbs;
-  char *r = (char *)rxvt_malloc (len * MB_CUR_MAX + 1);
-
-  char *dst = r;
-  while (len--)
-    {
-      ssize_t l = wcrtomb (dst, *str++, mbs);
-
-      if (l < 0)
-        {
-          *dst++ = '?';
-          wcrtomb (0, 0, mbs); // reset undefined state
-        }
-      else
-        dst += l;
-    }
-
-  *dst++ = 0;
-
-  return (char *)rxvt_realloc (r, dst - r);
+  return ((STRNCMP (s1, s2, n) == 0) ? n : 0);
 }
 
-wchar_t *
-rxvt_mbstowcs (const char *str, int len)
-{
-  if (len < 0) len = strlen (str);
-
-  wchar_t *r = (wchar_t *)rxvt_malloc ((len + 1) * sizeof (wchar_t));
-
-  if ((ssize_t)mbstowcs (r, str, len + 1) < 0)
-    *r = 0;
-
-  return r;
-}
-
-char *
-rxvt_wcstoutf8 (const wchar_t *str, int len)
-{
-  if (len < 0) len = wcslen (str);
-
-  char *r = (char *)rxvt_malloc (len * 4 + 1);
-  char *p = r;
-
-  while (len--)
-    {
-      unicode_t w = *str++ & UNICODE_MASK;
-
-      if      (w < 0x000080)
-        *p++ = w;
-      else if (w < 0x000800)
-        *p++ = 0xc0 | ( w >>  6),
-        *p++ = 0x80 | ( w        & 0x3f);
-      else if (w < 0x010000)
-        *p++ = 0xe0 | ( w >> 12),
-        *p++ = 0x80 | ((w >>  6) & 0x3f),
-        *p++ = 0x80 | ( w        & 0x3f);
-      else if (w < 0x110000)
-        *p++ = 0xf0 | ( w >> 18),
-        *p++ = 0x80 | ((w >> 12) & 0x3f),
-        *p++ = 0x80 | ((w >>  6) & 0x3f),
-        *p++ = 0x80 | ( w        & 0x3f);
-      else
-        *p++ = '?';
-    }
-
-  *p++ = 0;
-
-  return (char *)rxvt_realloc (r, p - r);
-}
-
-wchar_t *
-rxvt_utf8towcs (const char *str, int len)
-{
-  if (len < 0) len = strlen (str);
-
-  wchar_t *r = (wchar_t *)rxvt_malloc ((len + 1) * sizeof (wchar_t)),
-          *p = r;
-
-  unsigned char *s = (unsigned char *)str,
-                *e = s + len;
-
-  for (;;)
-    {
-      len = e - s;
-
-      if (len == 0)
-        break;
-      else if (s[0] < 0x80)
-        *p++ = *s++;
-      else if (len >= 2
-               && s[0] >= 0xc2 && s[0] <= 0xdf
-               && (s[1] & 0xc0) == 0x80)
-        {
-          *p++ = ((s[0] & 0x1f) << 6)
-               |  (s[1] & 0x3f);
-          s += 2;
-        }
-      else if (len >= 3
-               && (   (s[0] == 0xe0                 && s[1] >= 0xa0 && s[1] <= 0xbf)
-                   || (s[0] >= 0xe1 && s[0] <= 0xec && s[1] >= 0x80 && s[1] <= 0xbf)
-                   || (s[0] == 0xed                 && s[1] >= 0x80 && s[1] <= 0x9f)
-                   || (s[0] >= 0xee && s[0] <= 0xef && s[1] >= 0x80 && s[1] <= 0xbf)
-                  )
-               && (s[2] & 0xc0) == 0x80)
-        {
-          *p++ = ((s[0] & 0x0f) << 12)
-               | ((s[1] & 0x3f) <<  6)
-               |  (s[2] & 0x3f);
-          s += 3;
-        }
-      else if (len >= 4
-               && (   (s[0] == 0xf0                 && s[1] >= 0x90 && s[1] <= 0xbf)
-                   || (s[0] >= 0xf1 && s[0] <= 0xf3 && s[1] >= 0x80 && s[1] <= 0xbf)
-                   || (s[0] == 0xf4                 && s[1] >= 0x80 && s[1] <= 0x8f)
-                  )
-               && (s[2] & 0xc0) == 0x80
-               && (s[3] & 0xc0) == 0x80)
-        {
-          *p++ = ((s[0] & 0x07) << 18)
-               | ((s[1] & 0x3f) << 12)
-               | ((s[2] & 0x3f) <<  6)
-               |  (s[3] & 0x3f);
-          s += 4;
-        }
-      else
-        {
-          *p++ = 0xfffd;
-          s++;
-        }
-    }
-
-  *p = 0;
-
-  return r;
-}
-
+/* EXTPROTO */
 const char *
-rxvt_basename (const char *str) noexcept
+rxvt_Str_skip_space (const char *str)
 {
-  const char *base = strrchr (str, '/');
+  if (str)
+    while (*str && isspace (*str))
+      str++;
 
-  return base ? base + 1 : str;
-}
-
-/*
- * Print an error message
- */
-void
-rxvt_vlog (const char *fmt, va_list arg_ptr) noexcept
-{
-  char msg[1024];
-
-  vsnprintf (msg, sizeof msg, fmt, arg_ptr);
-
-  if (GET_R && GET_R->log_hook)
-    (*GET_R->log_hook) (msg);
-  else
-    write (STDOUT_FILENO, msg, strlen (msg));
-}
-
-void
-rxvt_log (const char *fmt,...) noexcept
-{
-  va_list arg_ptr;
-
-  va_start (arg_ptr, fmt);
-  rxvt_vlog (fmt, arg_ptr);
-  va_end (arg_ptr);
-}
-
-/*
- * Print an error message
- */
-void
-rxvt_warn (const char *fmt,...) noexcept
-{
-  va_list arg_ptr;
-
-  rxvt_log ("%s: ", RESNAME);
-
-  va_start (arg_ptr, fmt);
-  rxvt_vlog (fmt, arg_ptr);
-  va_end (arg_ptr);
-}
-
-void
-rxvt_fatal (const char *fmt,...)
-{
-  va_list arg_ptr;
-
-  rxvt_log ("%s: ", RESNAME);
-
-  va_start (arg_ptr, fmt);
-  rxvt_vlog (fmt, arg_ptr);
-  va_end (arg_ptr);
-
-  rxvt_exit_failure ();
-}
-
-void
-rxvt_exit_failure ()
-{
-  static class rxvt_failure_exception rxvt_failure_exception;
-  throw (rxvt_failure_exception);
+  return str;
 }
 
 /*
  * remove leading/trailing space in place.
  */
-char *
-rxvt_strtrim (char *str) noexcept
+/* EXTPROTO */
+char           *
+rxvt_Str_trim (char *str)
 {
   char *r, *s;
+  int n;
 
   if (!str || !*str)		/* shortcut */
     return str;
 
   /* skip leading spaces */
   for (s = str; *s && isspace (*s); s++) ;
-
   /* goto end of string */
-  r = s + strlen (s) - 1;
+  for (n = 0, r = s; *r++; n++) ;
+  r -= 2;
+  /* dump return */
+  if (n > 0 && *r == '\n')
+    n--, r--;
+  /* backtrack along trailing spaces */
+  for (; n > 0 && isspace (*r); r--, n--) ;
+  /* skip matching leading/trailing quotes */
+  if (*s == '"' && *r == '"' && n > 1)
+    {
+      s++;
+      n -= 2;
+    }
 
-  /* dump return and other trailing whitespace */
-  while (r > s && isspace (*r))
-    r--;
-
-  memmove (str, s, r + 1 - s);
-  str[r + 1 - s] = 0;
+  /* copy back over: forwards copy */
+  for (r = str; n; n--)
+    *r++ = *s++;
+  *r = '\0';
 
   return str;
 }
@@ -283,74 +124,289 @@ rxvt_strtrim (char *str) noexcept
  * Split a string into an array based on the given delimiter, stripping leading and
  * trailing spaces from each entry.  Empty strings are properly returned
  */
-char **
-rxvt_strsplit (char delim, const char *str) noexcept
+/* EXTPROTO */
+int
+rxvt_Str_escaped (char *str)
 {
   int l, n;
   char *s, *t;
   char **ret;
 
-  s = strdup (str ? str : "");
+  if (!str || !*str)
+    return 0;
+
+  d = s = str;
+
+  if (*s == 'M' && s[1] == '-')
+    {
+      /* Emacs convenience, replace leading `M-..' with `\E..' */
+      *d++ = C0_ESC;
+      s += 2;
+      if (toupper (*s) == 'X')
+        /* append carriage-return for `M-xcommand' */
+        for (*d++ = 'x', append = '\r', s++; isspace (*s); s++) ;
+    }
+  for (; (ch = *s++);)
+    {
+      if (ch == '\\')
+        {
+          ch = *s++;
+          if (ch >= '0' && ch <= '7')
+            {	/* octal */
+              num = ch - '0';
+              for (i = 0; i < 2; i++, s++)
+                {
+                  ch = *s;
+                  if (ch < '0' || ch > '7')
+                    break;
+                  num = num * 8 + ch - '0';
+                }
+              ch = (char)num;
+            }
+          else if (ch == 'a')
+            ch = C0_BEL;	/* bell */
+          else if (ch == 'b')
+            ch = C0_BS;	/* backspace */
+          else if (ch == 'E' || ch == 'e')
+            ch = C0_ESC;	/* escape */
+          else if (ch == 'n')
+            ch = '\n';	/* newline */
+          else if (ch == 'r')
+            ch = '\r';	/* carriage-return */
+          else if (ch == 't')
+            ch = C0_HT;	/* tab */
+        }
+      else if (ch == '^')
+        {
+          ch = *s++;
+          ch = toupper (ch);
+          ch = (ch == '?' ? 127 : (ch - '@'));
+        }
+      *d++ = ch;
+    }
+
+  /* ESC] is an XTerm escape sequence, must be terminated */
+  if (*str == '\0' && str[1] == C0_ESC && str[2] == ']')
+    append = CHAR_ST;
+
+  /* add trailing character as required */
+  if (append && d[-1] != append)
+    *d++ = append;
+  *d = '\0';
+
+  return (d - str);
+}
+
+/*
+ * Split a comma-separated string into an array, stripping leading and
+ * trailing spaces (and paired quotes) from each entry.  Empty strings
+ * are properly returned
+ * Caller should free each entry and array when done
+ */
+/* EXTPROTO */
+char          **
+rxvt_splitcommastring (const char *cs)
+{
+  int             l, n, p;
+  const char     *s, *t;
+  char          **ret;
+
+  if ((s = cs) == NULL)
+    s = "";
 
   for (n = 1, t = s; *t; t++)
     if (*t == delim)
       n++;
-
   ret = (char **)malloc ((n + 1) * sizeof (char *));
   ret[n] = NULL;
 
   for (l = 0, t = s; l < n; l++)
     {
-      for (; *t && *t != delim; t++)
-        ;
-      *t = '\0';
-      ret[l] = s;
-      rxvt_strtrim (ret[l]);
+      for ( ; *t && *t != ','; t++) ;
+      p = t - s;
+      ret[l] = (char *)malloc (p + 1);
+      strncpy (ret[l], s, p);
+      ret[l][p] = '\0';
+      rxvt_Str_trim (ret[l]);
       s = ++t;
     }
 
   return ret;
 }
 
-void *
-rxvt_malloc (size_t size)
+/*----------------------------------------------------------------------*
+ * file searching
+ */
+
+/* #define DEBUG_SEARCH_PATH */
+
+#if defined (XPM_BACKGROUND) || (MENUBAR_MAX)
+/*
+ * search for FILE in the current working directory, and within the
+ * colon-delimited PATHLIST, adding the file extension EXT if required.
+ *
+ * FILE is either semi-colon or zero terminated
+ */
+/* INTPROTO */
+char           *
+rxvt_File_search_path (const char *pathlist, const char *file, const char *ext)
 {
   void *p = malloc (size);
 
-  if (!p)
-    rxvt_fatal ("memory allocation failure. aborting.\n");
+  if (!access (file, R_OK))	/* found (plain name) in current directory */
+    return STRDUP (file);
 
-  return p;
+  /* semi-colon delimited */
+  if ((p = STRCHR (file, ';')))
+    len = (p - file);
+  else
+    len = STRLEN (file);
+
+#ifdef DEBUG_SEARCH_PATH
+  getcwd (name, sizeof (name));
+  fprintf (stderr, "pwd: \"%s\"\n", name);
+  fprintf (stderr, "find: \"%.*s\"\n", len, file);
+#endif
+
+  /* leave room for an extra '/' and trailing '\0' */
+  maxpath = sizeof (name) - (len + (ext ? STRLEN (ext) : 0) + 2);
+  if (maxpath <= 0)
+    return NULL;
+
+  /* check if we can find it now */
+  STRNCPY (name, file, len);
+  name[len] = '\0';
+
+  if (!access (name, R_OK))
+    return STRDUP (name);
+  if (ext)
+    {
+      STRCAT (name, ext);
+      if (!access (name, R_OK))
+        return STRDUP (name);
+    }
+  for (path = pathlist; path != NULL && *path != '\0'; path = p)
+    {
+      int             n;
+
+      /* colon delimited */
+      if ((p = STRCHR (path, ':')) == NULL)
+        p = STRCHR (path, '\0');
+
+      n = (p - path);
+      if (*p != '\0')
+        p++;
+
+      if (n > 0 && n <= maxpath)
+        {
+          STRNCPY (name, path, n);
+          if (name[n - 1] != '/')
+            name[n++] = '/';
+          name[n] = '\0';
+          STRNCAT (name, file, len);
+
+          if (!access (name, R_OK))
+            return STRDUP (name);
+          if (ext)
+            {
+              STRCAT (name, ext);
+              if (!access (name, R_OK))
+                return STRDUP (name);
+            }
+        }
+    }
+  return NULL;
 }
 
-void *
-rxvt_calloc (size_t number, size_t size)
+/* EXTPROTO */
+char           *
+rxvt_File_find (const char *file, const char *ext, const char *path)
 {
   void *p = calloc (number, size);
 
   if (!p)
     rxvt_fatal ("memory allocation failure. aborting.\n");
 
-  return p;
+  /* search environment variables here too */
+  if ((f = rxvt_File_search_path (path, file, ext)) == NULL)
+#ifdef PATH_ENV
+    if ((f = rxvt_File_search_path (getenv (PATH_ENV), file, ext)) == NULL)
+#endif
+      f = rxvt_File_search_path (getenv ("PATH"), file, ext);
+
+#ifdef DEBUG_SEARCH_PATH
+  if (f)
+    fprintf (stderr, "found: \"%s\"\n", f);
+#endif
+
+  return f;
 }
 
-void *
-rxvt_realloc (void *ptr, size_t size)
+/*----------------------------------------------------------------------*
+ * miscellaneous drawing routines
+ */
+
+/*
+ * Draw top/left and bottom/right border shadows around windows
+ */
+#if defined(RXVT_SCROLLBAR) || defined(MENUBAR)
+/* EXTPROTO */
+void
+rxvt_Draw_Shadow (Display *display, Window win, GC topShadow, GC botShadow, int x, int y, int w, int h)
 {
   void *p = realloc (ptr, size);
 
-  if (!p)
-    rxvt_fatal ("memory allocation failure. aborting.\n");
-
-  return p;
+  shadow = (w == 0 || h == 0) ? 1 : SHADOW;
+  w += x - 1;
+  h += y - 1;
+  for (; shadow-- > 0; x++, y++, w--, h--)
+    {
+      XDrawLine (display, win, topShadow, x, y, w, y);
+      XDrawLine (display, win, topShadow, x, y, x, h);
+      XDrawLine (display, win, botShadow, w, h, w, y + 1);
+      XDrawLine (display, win, botShadow, w, h, x + 1, h);
+    }
 }
 
-KeySym
-rxvt_XKeycodeToKeysym (Display *dpy, KeyCode code, int index)
+/* button shapes */
+#ifdef MENUBAR
+/* EXTPROTO */
+void
+rxvt_Draw_Triangle (Display *display, Window win, GC topShadow, GC botShadow, int x, int y, int w, int type)
 {
-  int size;
-  KeySym *mapping = XGetKeyboardMapping (dpy, code, 1, &size);
-  KeySym keysym = IN_RANGE_EXC (index, 0, size) ? mapping[index] : NoSymbol;
-  XFree (mapping);
-  return keysym;
+  switch (type)
+    {
+      case 'r':			/* right triangle */
+        XDrawLine (display, win, topShadow, x, y, x, y + w);
+        XDrawLine (display, win, topShadow, x, y, x + w, y + w / 2);
+        XDrawLine (display, win, botShadow, x, y + w, x + w, y + w / 2);
+        break;
+
+      case 'l':			/* left triangle */
+        XDrawLine (display, win, botShadow, x + w, y + w, x + w, y);
+        XDrawLine (display, win, botShadow, x + w, y + w, x, y + w / 2);
+        XDrawLine (display, win, topShadow, x, y + w / 2, x + w, y);
+        break;
+
+      case 'd':			/* down triangle */
+        XDrawLine (display, win, topShadow, x, y, x + w / 2, y + w);
+        XDrawLine (display, win, topShadow, x, y, x + w, y);
+        XDrawLine (display, win, botShadow, x + w, y, x + w / 2, y + w);
+        break;
+
+      case 'u':			/* up triangle */
+        XDrawLine (display, win, botShadow, x + w, y + w, x + w / 2, y);
+        XDrawLine (display, win, botShadow, x + w, y + w, x, y + w);
+        XDrawLine (display, win, topShadow, x, y + w, x + w / 2, y);
+        break;
+#if 0
+      case 's':			/* square */
+        XDrawLine (display, win, topShadow, x + w, y, x, y);
+        XDrawLine (display, win, topShadow, x, y, x, y + w);
+        XDrawLine (display, win, botShadow, x, y + w, x + w, y + w);
+        XDrawLine (display, win, botShadow, x + w, y + w, x + w, y);
+        break;
+#endif
+
+    }
 }
