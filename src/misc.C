@@ -26,11 +26,31 @@
 #include "../config.h"		/* NECESSARY */
 #include "rxvt.h"		/* NECESSARY */
 
-#include <new>
+/* EXTPROTO */
+char *
+rxvt_wcstombs (const wchar_t *str, int len)
+{
+  mbstate mbs;
+  char *r = (char *)rxvt_malloc (len * MB_CUR_MAX + 1);
 
-// alas new/delete cannot be specified as inline in C++11 (see 17.6.4.6)
-void *
-operator new (size_t s)
+  char *dst = r;
+  while (len--)
+    {
+      int l = wcrtomb (dst, *str++, mbs);
+      if (l < 0)
+        *dst++ = '?';
+      else
+        dst += l;
+    }
+
+  *dst++ = 0;
+
+  return r;
+}
+
+/* EXTPROTO */
+char *
+rxvt_strdup (const char *str)
 {
   return rxvt_malloc (s);
 }

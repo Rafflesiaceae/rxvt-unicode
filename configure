@@ -1335,8 +1335,11 @@ Optional Packages:
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
   --with-gnu-ld           assume the C compiler uses GNU ld default=no
   --with-pic              try to use only PIC/non-PIC objects default=use both
-  --with-codesets=NAME,...    compile in additional codesets (jp,jp_ext,kr,cn,cn_ext,all)
-  --with-term=NAME        set the terminal to NAME (default \"rxvt\")
+  --with-codesets=NAME,.. compile in additional codesets (jp,jp_ext,kr,cn,cn_ext,all)
+  --with-res-name=NAME    use this as default resource name (default: urxvt)
+  --with-res-class=CLASS  use this as the resource class (default: URxvt)
+  --with-name=NAME        set the basename for the installed binaries (default: urxvt)
+  --with-term=NAME        set the terminal to NAME (default: rxvt)
   --with-terminfo=PATH    set the path to the terminfo tree to PATH
   --with-x                use the X Window System
 
@@ -5870,7 +5873,7 @@ test "x$enable_libtool_lock" != xno && enable_libtool_lock=yes
 case "$host" in
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 5035 "configure"' > conftest.$ac_ext
+  echo '#line 5040 "configure"' > conftest.$ac_ext
   if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -6421,7 +6424,7 @@ chmod -w .
 save_CFLAGS="$CFLAGS"
 CFLAGS="$CFLAGS -o out/conftest2.$ac_objext"
 compiler_c_o=no
-if { (eval echo configure:5586: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>out/conftest.err; } && test -s out/conftest2.$ac_objext; then
+if { (eval echo configure:5591: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>out/conftest.err; } && test -s out/conftest2.$ac_objext; then
   # The compiler can only warn and ignore the option if not recognized
   # So say no if there are warnings
   if test -s out/conftest.err; then
@@ -8037,7 +8040,7 @@ else
     lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 7202 "configure"
+#line 7207 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -8135,7 +8138,7 @@ else
     lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 7300 "configure"
+#line 7305 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -8888,12 +8891,8 @@ support_xim=no
 support_xpm=no
 support_xft=no
 support_unicode3=no
-support_combining=yes
-support_8bitctrls=no
-support_iso14755=yes
-support_styles=yes
-support_perl=yes
-codesets=all
+support_combining=no
+codesets=
 
 
 # Check whether --enable-everything was given.
@@ -8954,12 +8953,36 @@ then :
 fi
 
 
-support_assertions=no
-# Check whether --enable-assert was given.
-if test ${enable_assert+y}
-then :
-  enableval=$enable_assert; if test x$enableval = xyes; then
-    support_assertions=yes
+# Check whether --enable-everything or --disable-everything was given.
+if test "${enable_everything+set}" = set; then
+  enableval="$enable_everything"
+  if test x$enableval = xyes; then
+    support_24bit=yes
+    support_frills=yes
+    support_linespace=yes
+    support_inheritpixmap=yes
+    support_keepscrolling=yes
+    support_selectionscrolling=yes
+    support_lastlog=yes
+    support_menubar=yes
+    support_mousewheel=yes
+    support_mouseslipwheel=yes
+    support_oldselection=yes
+    support_cursor_blink=yes
+    support_text_blink=yes
+    support_pointer_blank=yes
+    support_scroll_rxvt=yes
+    support_scroll_next=yes
+    support_scroll_xterm=yes
+    support_scroll_plain=yes
+    support_utmp=yes
+    support_wtmp=yes
+    support_xim=yes
+    support_xpm=yes
+    support_xft=yes
+    support_unicode3=yes
+    support_combining=yes
+    codesets=all
   fi
 fi
 
@@ -8970,6 +8993,14 @@ if test "${enable_unicode3+set}" = set; then
     support_unicode3=yes
   fi
 fi
+
+# Check whether --enable-combining or --disable-combining was given.
+if test "${enable_combining+set}" = set; then
+  enableval="$enable_combining"
+  if test x$enableval = xyes -o x$enableval = xno; then
+    support_combining=yes
+  fi
+fi;
 
 # Check whether --enable-xft or --disable-xft was given.
 if test "${enable_xft+set}" = set; then
@@ -17204,7 +17235,7 @@ _ACEOF
 cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
-#include <locale.h>
+#include <clocale>
 int
 main ()
 {
@@ -17477,10 +17508,9 @@ if test x$support_image = xyes && test x$rxvt_have_xrender = xyes; then
 printf %s "checking for Render >= 0.11... " >&6; }
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
-
-#include <X11/extensions/Xrender.h>
-#if RENDER_MAJOR == 0 && RENDER_MINOR <= 10
-error
+#define _GNU_SOURCE
+#ifdef HAVE_STDLIB_H
+# include <cstdlib>
 #endif
 
 int
@@ -17770,8 +17800,15 @@ if test x$support_combining = xyes; then
 printf "%s\n" "#define ENABLE_COMBINING 1" >>confdefs.h
 
 fi
+if test x$support_combining = xyes; then
+
+cat >>confdefs.h <<\_ACEOF
+#define ENCODING_COMPOSE 1
+_ACEOF
+
+fi
 if test x$codesets = xall; then
-  codesets=jp,jp-ext,kr,zh,zh-ext
+  codesets=jp,jp-ext,kr,cn,cn-ext
 fi
 
 printf "%s\n" "#define ENCODING_EU 1" >>confdefs.h
@@ -17809,23 +17846,131 @@ printf "%s\n" "#define ENCODING_ZH_EXT 1" >>confdefs.h
   esac
 done
 
-IF_PERL=\#
-if test x$support_perl = xyes; then
-  # Extract the first word of "perl5", so it can be a program name with args.
-set dummy perl5; ac_word=$2
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-printf %s "checking for $ac_word... " >&6; }
-if test ${ac_cv_path_PERL+y}
-then :
-  printf %s "(cached) " >&6
-else $as_nop
-  case $PERL in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_PERL="$PERL" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
+
+CFLAGS=${CFLAGS--O}
+LDFLAGS=${LDFLAGS--O}
+
+CPPFLAGS="$CPPFLAGS"
+
+
+
+
+
+
+
+if test x$rxvt_cv_rpath = xyes -o x$rxvt_cv_R = xyes; then
+  DLIB=`echo $DLIB | sed "$R_TRANSLATE"`
+  LIBS=`echo $LIBS | sed "$R_TRANSLATE"`
+  X_LIBS=`echo $X_LIBS | sed "$R_TRANSLATE"`
+  X_EXTRA_LIBS=`echo $X_EXTRA_LIBS | sed "$R_TRANSLATE"`
+  XPM_LIBS=`echo $XPM_LIBS | sed "$R_TRANSLATE"`
+fi
+
+
+
+
+
+if test x$support_addstrings = xno; then
+
+cat >>confdefs.h <<\_ACEOF
+#define NO_STRINGS 1
+_ACEOF
+
+fi
+
+MCOMMON=./autoconf/Make.common
+
+
+test "$program_prefix" != NONE &&
+  program_transform_name="s,^,$program_prefix,;$program_transform_name"
+# Use a double $ so make ignores it.
+test "$program_suffix" != NONE &&
+  program_transform_name="s,\$,$program_suffix,;$program_transform_name"
+# Double any \ or $.  echo might interpret backslashes.
+# By default was `s,x,x', remove it if useless.
+cat <<\_ACEOF >conftest.sed
+s/[\\$]/&&/g;s/;s,x,x,$//
+_ACEOF
+program_transform_name=`echo $program_transform_name | sed -f conftest.sed`
+rm conftest.sed
+
+
+
+
+
+if test "$ac_cv_header_stdint_h" = "yes" -o "$notset" = "dontmatch"; then
+  include_stdint_h="#include <stdint.h>"
+else
+  include_stdint_h="/* #include <stdint.h> */"
+fi
+if test "$ac_cv_header_stdarg_h" = "yes" -o "$notset" = "dontmatch"; then
+  include_stdarg_h="#include <cstdarg>"
+else
+  include_stdarg_h="/* #include <cstdarg> */"
+fi
+if test "$ac_cv_header_stdlib_h" = "yes" -o "$notset" = "dontmatch"; then
+  include_stdlib_h="#include <cstdlib>"
+else
+  include_stdlib_h="/* #include <cstdlib> */"
+fi
+if test "$ac_cv_header_unistd_h" = "yes" -o "$notset" = "dontmatch"; then
+  include_unistd_h="#include <unistd.h>"
+else
+  include_unistd_h="/* #include <unistd.h> */"
+fi
+if test "$ac_cv_header_string_h" = "yes" -o "$notset" = "dontmatch"; then
+  include_string_h="#include <cstring>"
+else
+  include_string_h="/* #include <cstring> */"
+fi
+if test "$ac_cv_header_fcntl_h" = "yes" -o "$notset" = "dontmatch"; then
+  include_fcntl_h="#include <fcntl.h>"
+else
+  include_fcntl_h="/* #include <fcntl.h> */"
+fi
+if test "$ac_cv_header_util_h" = "yes" -o "$notset" = "dontmatch"; then
+  include_util_h="#include <util.h>"
+else
+  include_util_h="/* #include <util.h> */"
+fi
+if test "$ac_cv_header_assert_h" = "yes" -o "$notset" = "dontmatch"; then
+  include_assert_h="#include <assert.h>"
+else
+  include_assert_h="/* #include <assert.h> */"
+fi
+if test "$rxvt_cv_header_sysioctl" = "yes" -o "$notset" = "dontmatch"; then
+  include_sys_ioctl_h="#include <sys/ioctl.h>"
+else
+  include_sys_ioctl_h="/* #include <sys/ioctl.h> */"
+fi
+if test "$ac_cv_header_sys_select_h" = "yes" -o "$notset" = "dontmatch"; then
+  include_sys_select_h="#include <sys/select.h>"
+else
+  include_sys_select_h="/* #include <sys/select.h> */"
+fi
+if test "$ac_cv_header_sys_strredir_h" = "yes" -o "$notset" = "dontmatch"; then
+  include_sys_strredir_h="#include <sys/strredir.h>"
+else
+  include_sys_strredir_h="/* #include <sys/strredir.h> */"
+fi
+if test "$ac_cv_header_sys_time_h" = "yes" -o "$notset" = "dontmatch"; then
+  include_sys_time_h="#include <sys/time.h>"
+else
+  include_sys_time_h="/* #include <sys/time.h> */"
+fi
+if test "$ac_cv_header_sys_time_h" = "no" -o "$ac_cv_header_time" = "yes"; then
+  include_time_h="#include <time.h>"
+else
+  include_time_h="/* #include <time.h> */"
+fi
+
+if test x$support_xft = xyes; then
+  LIBS="$LIBS `pkg-config xft --libs`"
+  CFLAGS="$CFLAGS `pkg-config xft --cflags`"
+  CPPFLAGS="$CPPFLAGS `pkg-config xft --cflags`"
+
+
+for ac_header in X11/Xft/Xft.h
 do
 as_ac_Header=`echo "ac_cv_header_$ac_header" | $as_tr_sh`
 if eval "test \"\${$as_ac_Header+set}\" = set"; then
@@ -19554,6 +19699,23 @@ echo "  default resource name:      $RESNAME"
 echo "  resource class:             $RESCLASS"
 if test x$RESFALLBACK != x; then
    echo "  resource class fallback:    $RESFALLBACK"
+fi
+echo
+if test x$rxvt_cv_ptys = xUNKNOWN; then
+  echo ".----------------------------------------------------------------."
+  echo ". WARNING: could not determine pty/tty type.  Do not build until ."
+  echo ".          the appropriate PTYS_ARE_* is defined in config.h     ."
+  echo ".----------------------------------------------------------------."
+fi
+if test x$support_xpm = xneedsmanualspecification; then
+  echo ".----------------------------------------------------------------."
+  echo ". WARNING: --enable-xpm-background was specified however the     ."
+  echo ".          XPM includes files and libraries could not be found.  ."
+  echo ".          XPM backgrounds are now being DISABLED!  If you want  ."
+  echo ".          to use them you should rerun   configure   with the   ."
+  echo ".          appropriate --with-xpm-includes=/path/to/xpm/includes ."
+  echo ".          and --with-xpm-library=/path/to/xpm/library lines.    ."
+  echo ".----------------------------------------------------------------."
 fi
 echo
 echo "  embedded perl:              $support_perl"
