@@ -5,6 +5,7 @@
 #ifndef COMMAND_H_
 #define COMMAND_H_
 
+#define STRING_MAX	1024	/* max string size for process_rxvt_xterm_seq() */
 #define ESC_ARGS	32	/* max # of args for esc sequences */
 
 #ifndef SCROLLBAR_INITIAL_DELAY
