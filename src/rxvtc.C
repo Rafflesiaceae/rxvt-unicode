@@ -1,24 +1,5 @@
-/*----------------------------------------------------------------------*
- * File:	rxvtc.C
- *----------------------------------------------------------------------*
- *
- * All portions of code are copyright by their respective author/s.
- * Copyright (c) 2003-2006 Marc Lehmann <schmorp@schmorp.de>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *----------------------------------------------------------------------*/
+#include "../config.h"
+#include "rxvtdaemon.h"
 
 #include "../config.h"
 #include <stdio.h>
@@ -103,6 +84,8 @@ main (int argc, const char *const *argv)
     }
 
   c.send ("NEW");
+  // instead of getcwd we could opendir (".") and pass the fd for fchdir *g*
+  c.send ("CWD"), c.send (getcwd (buf, sizeof (buf)));
 
   for (char **var = environ; *var; var++)
     c.send ("ENV"), c.send (*var);
@@ -120,7 +103,6 @@ main (int argc, const char *const *argv)
   c.send ("END");
 
   auto_str tok;
-  int cint;
 
   for (;;)
     if (!c.recv (tok))
@@ -130,27 +112,18 @@ main (int argc, const char *const *argv)
       }
     else if (!strcmp (tok, "MSG") && c.recv (tok))
       fprintf (stderr, "%s", (const char *)tok);
-    else if (!strcmp (tok, "GETFD") && c.recv (cint))
-      {
-        if (!ptytty::send_fd (c.fd, cint))
-          {
-            fprintf (stderr, "unable to send fd %d: ", cint); perror (0);
-            exit (STATUS_FAILURE);
-          }
-      }
     else if (!strcmp (tok, "END"))
       {
         int success;
-
         if (c.recv (success))
-          exit (success ? STATUS_SUCCESS : STATUS_FAILURE);
+          exit (success ? EXIT_SUCCESS : EXIT_FAILURE);
       }
     else
       {
-        fprintf (stderr, "protocol error: received unsupported token '%s'.\n", (const char *)tok);
+        fprintf (stderr, "protocol error: received illegal token '%s'.\n", (const char *)tok);
         break;
       }
 
-  return STATUS_FAILURE;
+  return EXIT_FAILURE;
 }
 

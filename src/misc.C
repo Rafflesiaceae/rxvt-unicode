@@ -68,19 +68,76 @@ rxvt_r_basename (const char *str)
  * Print an error message
  */
 void
-rxvt_print_error (const char *fmt,...)
+rxvt_vlog (const char *fmt, va_list arg_ptr)
+{
+  char msg[1024];
+
+  vsnprintf (msg, sizeof msg, fmt, arg_ptr);
+
+  if (GET_R && GET_R->log_hook)
+    (*GET_R->log_hook) (msg);
+  else
+    write (STDOUT_FILENO, msg, strlen (msg));
+}
+
+/* EXTPROTO */
+void
+rxvt_log (const char *fmt,...)
 {
   va_list arg_ptr;
 
   va_start (arg_ptr, fmt);
-  fprintf (stderr, APL_NAME ": ");
-  vfprintf (stderr, fmt, arg_ptr);
-  fprintf (stderr, "\n");
+  rxvt_vlog (fmt, arg_ptr);
   va_end (arg_ptr);
 }
 
 /*
  * Print an error message
+ */
+/* EXTPROTO */
+void
+rxvt_warn (const char *fmt,...)
+{
+  va_list arg_ptr;
+
+  rxvt_log ("%s: ", RESNAME);
+
+  va_start (arg_ptr, fmt);
+  rxvt_vlog (fmt, arg_ptr);
+  va_end (arg_ptr);
+}
+
+/* EXTPROTO */
+void
+rxvt_fatal (const char *fmt,...)
+{
+  va_list arg_ptr;
+
+  rxvt_log ("%s: ", RESNAME);
+
+  va_start (arg_ptr, fmt);
+  rxvt_vlog (fmt, arg_ptr);
+  va_end (arg_ptr);
+
+  rxvt_exit_failure ();
+}
+
+class rxvt_failure_exception rxvt_failure_exception;
+
+/* EXTPROTO */
+void
+rxvt_exit_failure ()
+{
+  throw (rxvt_failure_exception);
+}
+
+/*
+ * check that the first characters of S1 match S2
+ *
+ * No Match
+ *      return: 0
+ * Match
+ *      return: STRLEN (S2)
  */
 /* EXTPROTO */
 int
