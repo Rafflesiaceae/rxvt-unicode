@@ -1,4 +1,4 @@
-/*----------------------------------------------------------------------*
+/*--------------------------------*-C-*---------------------------------*
  * File:	xdefaults.C
  *----------------------------------------------------------------------*
  *
@@ -6,8 +6,7 @@
  * Copyright (c) 1994      Robert Nation <nation@rocket.sanders.lockheed.com>
  *				- original version
  * Copyright (c) 1997,1998 mj olesen <olesen@me.queensu.ca>
- * Copyright (c) 2003-2006 Marc Lehmann <schmorp@schmorp.de>
- * Copyright (c) 2007,2015 Emanuele Giaquinta <e.giaquinta@glauco.it>
+ * Copyright (c) 2003-2004 Marc Lehmann <pcg@goof.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

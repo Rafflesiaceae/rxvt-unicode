@@ -1,4 +1,4 @@
-/*---------------------------------------------------------------------------*
+/*--------------------------------*-C-*--------------------------------------*
  * File:        screen.C
  *---------------------------------------------------------------------------*
  *
@@ -1098,11 +1098,11 @@ rxvt_term::scr_add_lines (const wchar_t *str, int len, int minlines) noexcept
       if (c < 0x20)
         switch (c)
           {
-            case '\t':
+            case C0_HT:
               scr_tab (1);
               continue;
 
-            case '\n':
+            case C0_LF:
               if (screen.tlen[row] != -1)      /* XXX: think about this */
                 MAX_IT (screen.tlen[row], screen.cur.col);
 
@@ -1117,7 +1117,7 @@ rxvt_term::scr_add_lines (const wchar_t *str, int len, int minlines) noexcept
               srp = screen.rend[row];  /* _must_ refresh */
               continue;
 
-            case '\r':
+            case C0_CR:
               if (screen.tlen[row] != -1)      /* XXX: think about this */
                 MAX_IT (screen.tlen[row], screen.cur.col);
 
@@ -1343,6 +1343,8 @@ end_of_line:
 void
 rxvt_term::scr_backspace () noexcept
 {
+  want_refresh = 1;
+
   if (screen.cur.col == 0)
     {
       if (screen.cur.row > 0)
@@ -1359,6 +1361,8 @@ rxvt_term::scr_backspace () noexcept
     screen.flags &= ~Screen_WrapNext;
   else
     scr_gotorc (0, -1, RELATIVE);
+
+  screen.flags &= ~Screen_WrapNext;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1490,8 +1494,7 @@ rxvt_term::scr_gotorc (int row, int col, int relative) noexcept
 
   D_SCREEN ((stderr, "rxvt_scr_gotorc (r:%s%d,c:%s%d): from (r:%d,c:%d)", (relative & R_RELATIVE ? "+" : ""), row, (relative & C_RELATIVE ? "+" : ""), col, screen.cur.row, screen.cur.col));
 
-  screen.cur.col = ((relative & C_RELATIVE) ? (screen.cur.col + col)
-                    : col);
+  screen.cur.col = relative & C_RELATIVE ? screen.cur.col + col : col;
   MAX_IT (screen.cur.col, 0);
   MIN_IT (screen.cur.col, (int32_t)TermWin.ncol - 1);
 
@@ -1538,6 +1541,8 @@ rxvt_term::scr_gotorc (int row, int col, int relative) noexcept
 void
 rxvt_term::scr_index (enum page_dirn direction) noexcept
 {
+  int dirn;
+
   want_refresh = 1;
   dirn = ((direction == UP) ? 1 : -1);
   D_SCREEN ((stderr, "rxvt_scr_index (%d)", dirn));
@@ -2266,6 +2271,7 @@ rxvt_term::scr_changeview (int new_view_start) noexcept
       want_refresh = 1;
       num_scr -= (TermWin.view_start - oldviewstart);
     }
+
   return (int) (TermWin.view_start - oldviewstart);
 }
 
@@ -3095,10 +3101,9 @@ rxvt_term::tt_paste (char *data, unsigned int len) noexcept
     if (data[i] == C0_LF)
       data[i] = C0_CR;
 
-  #if ENABLE_FRILLS
-  if ((priv_modes & PrivMode_BracketPaste) && !option (Opt_disablePasteBrackets))
-    tt_printf ("\x1b[200~");
-  #endif
+      for (j = 0; j < n; j++)
+        if (ds[j] == C0_LF)
+          ds[j] = C0_CR;
 
   tt_write (data, len);
 
@@ -3451,23 +3456,12 @@ rxvt_term::selection_make (Time tm)
             new_selection_text[ofs++] = *t++;
         }
 
-#if !ENABLE_MINIMAL
-      if (selection.rect)
-        {
-          while (ofs
-                 && new_selection_text[ofs - 1] != C0_LF
-                 && unicode::is_space (new_selection_text[ofs - 1]))
-            --ofs;
-
-          new_selection_text[ofs++] = C0_LF;
-        }
-      else
-#endif
-        if (!ROW(row).is_longer ()
-            && (row != selection.end.row || end_col != selection.end.col)
-            && (row != selection.beg.row || selection.beg.col < ncol))
-          new_selection_text[ofs++] = C0_LF;
+      if (screen.tlen[row] != -1 && row != end_row)
+        new_selection_text[ofs++] = C0_LF;
     }
+
+  if (end_col != selection.end.col)
+    new_selection_text[ofs++] = C0_LF;
 
   new_selection_text[ofs] = 0;
 
@@ -3737,6 +3731,8 @@ rxvt_term::selection_extend (int x, int y, int flag) noexcept
 void ecb_cold
 rxvt_term::selection_extend_colrow (int32_t col, int32_t row, int button3, int buttonpress, int clickchange) noexcept
 {
+  int16_t ncol = TermWin.ncol;
+  int end_col;
   row_col_t pos;
   enum {
     LEFT, RIGHT

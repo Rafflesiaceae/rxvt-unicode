@@ -1,4 +1,4 @@
-/*----------------------------------------------------------------------*
+/*--------------------------------*-C-*---------------------------------*
  * File:	command.C
  *----------------------------------------------------------------------*
  *
@@ -965,48 +965,10 @@ rxvt_term::flush ()
 
   if (want_refresh)
     {
-      if (SHOULD_INVOKE (HOOK_LINE_UPDATE))
-        {
-          int row = view_start;
-          int end_row = row + nrow;
-
-          while (row > top_row && ROW (row - 1).is_longer ())
-            --row;
-
-          do
-            {
-              int start_row = row;
-              line_t *l;
-
-              do
-                {
-                  l = &ROW (row++);
-
-                  if (!(l->f & LINE_FILTERED))
-                    {
-                      // line not filtered, mark it as filtered
-                      l->f |= LINE_FILTERED;
-                      while (l->is_longer ())
-                        {
-                          l = &ROW (row++);
-                          l->f |= LINE_FILTERED;
-                        }
-
-                      // and filter it
-                      HOOK_INVOKE ((this, HOOK_LINE_UPDATE, DT_INT, start_row, DT_END));
-
-                      break;
-                    }
-                }
-              while (l->is_longer () && row < end_row);
-            }
-          while (row < end_row);
-        }
-
-      scr_refresh ();
-      scrollBar.show (1);
-#if USE_XIM
-      im_send_spot ();
+      scr_refresh (refresh_type);
+      scrollbar_show (1);
+#ifdef USE_XIM
+      IMSendSpot ();
 #endif
     }
 
@@ -1189,7 +1151,15 @@ rxvt_term::pty_fill ()
 {
   cmdbuf_reify ();
 
-  size_t avail = cmdbuf_base + CBUFSIZ - cmdbuf_endp;
+  if (CBUFSIZ == n)
+    {
+      rxvt_warn ("pty_fill on full buffer, draining input, continuing.\n");
+      n = 0;
+    }
+
+  memmove (cmdbuf_base, cmdbuf_ptr, n);
+  cmdbuf_ptr = cmdbuf_base;
+  cmdbuf_endp = cmdbuf_ptr + n;
 
   n = read (cmd_fd, cmdbuf_endp, CBUFSIZ - n);
 
@@ -1222,23 +1192,10 @@ rxvt_term::pty_cb (ev::io &w, int revents)
   if (revents & EVENT_WRITE)
     tt_write (0, 0);
   else if (revents & EVENT_READ)
-    {
-      // loop, but don't allow a single term to monopolize us
-      // the number of loops is fully arbitrary, and thus wrong
-      while (pty_fill ())
-        {
-          if (!seen_input)
-            {
-              seen_input = 1;
-              /* once we know the shell is running, send the screen size.  Again! */
-              // I don't know why, btw.
-              tt_winch ();
-            }
-
-          if (cmd_parse ())
-            break;
-        }
-    }
+    // loop, but don't allow a single term to monopolize us
+    while (pty_fill ())
+      if (cmd_parse ())
+        break;
 }
 
 #ifdef POINTER_BLANK
@@ -1411,32 +1368,26 @@ rxvt_term::x_cb (XEvent &ev)
         if (ev.xclient.format == 32
             && !HOOK_INVOKE ((this, HOOK_CLIENT_MESSAGE, DT_XEVENT, &ev, DT_END)))
           {
-            if (ev.xclient.message_type == xa[XA_WM_PROTOCOLS])
-              {
-                if (!HOOK_INVOKE ((this, HOOK_WM_PROTOCOLS, DT_XEVENT, &ev, DT_END)))
-                  {
-                    if (ev.xclient.data.l[0] == xa[XA_WM_DELETE_WINDOW])
-                      {
-                        if (!HOOK_INVOKE ((this, HOOK_WM_DELETE_WINDOW, DT_XEVENT, &ev, DT_END)))
-                          destroy ();
-                      }
-#if ENABLE_EWMH
-                    else if (ev.xclient.data.l[0] == xa[XA_NET_WM_PING])
-                      XSendEvent (dpy, ev.xclient.window = display->root,
-                                  False, SubstructureRedirectMask | SubstructureNotifyMask,
-                                  &ev);
-#endif
-                  }
-              }
-#if ENABLE_XEMBED
-            else if (ev.xclient.format == 32 && ev.xclient.message_type == xa[XA_XEMBED])
-              {
-                if (ev.xclient.data.l[1] == XEMBED_FOCUS_IN)
-                  focus_in ();
-                else if (ev.xclient.data.l[1] == XEMBED_FOCUS_OUT)
-                  focus_out ();
-              }
-#endif
+            /* Get Dnd data */
+            Atom ActualType;
+            int ActualFormat;
+            unsigned char *data;
+            unsigned long Size, RemainingBytes;
+
+            XGetWindowProperty (display->display, display->root,
+                               xa[XA_DNDSELECTION],
+                               0L, 1000000L,
+                               False, AnyPropertyType,
+                               &ActualType, &ActualFormat,
+                               &Size, &RemainingBytes,
+                               &data);
+            XChangeProperty (display->display, display->root,
+                            XA_CUT_BUFFER0, XA_STRING,
+                            8, PropModeReplace,
+                            data, STRLEN (data));
+            XFree (data);
+            selection_paste (display->root, XA_CUT_BUFFER0, True);
+            XSetInputFocus (display->display, display->root, RevertToNone, CurrentTime);
           }
         break;
 
@@ -2255,7 +2206,7 @@ rxvt_term::check_our_parents ()
   else
     {
       have_pixmap = 1;
-      rootpixmap = * ((Pixmap *)prop);
+      rootpixmap = *(Pixmap *)prop;
       XFree (prop);
     }
   if (have_pixmap)
@@ -2341,7 +2292,7 @@ rxvt_term::cmd_parse ()
       if (ch == NOCHAR) // TODO: improve
         break;
 
-      if (!IS_CONTROL (ch) || ch == '\t' || ch == '\n' || ch == '\r')
+      if (!IS_CONTROL (ch) || ch == C0_LF || ch == C0_CR || ch == C0_HT)
         {
           /* Read a text string from the input buffer */
           unicode_t buf[UBUFSIZ];
@@ -2356,12 +2307,12 @@ rxvt_term::cmd_parse ()
               seq_begin = cmdbuf_ptr;
               ch = next_char ();
 
-              if (ch == NOCHAR || (IS_CONTROL (ch) && ch != '\t' && ch != '\n' && ch != '\r'))
+              if (ch == NOCHAR || (IS_CONTROL (ch) && ch != C0_LF && ch != C0_CR && ch != C0_HT))
                 break;
 
               *str++ = ch;
 
-              if (ch == '\n')
+              if (ch == C0_LF)
                 {
                   nlines++;
                   refresh_count++;
@@ -2406,8 +2357,8 @@ rxvt_term::cmd_parse ()
             {
               if ((Options & Opt_jumpScroll) && refresh_limit < REFRESH_PERIOD)
                 refresh_limit++;
-
-              scr_refresh (refresh_type);
+              else
+                scr_refresh (refresh_type);
             }
 
         }
@@ -2745,8 +2696,8 @@ rxvt_term::process_escape_seq ()
         /* 8.3.87: NEXT LINE */
       case C1_NEL:		/* ESC E */
         {
-          wchar_t nlcr[] = { C0_LF, C0_CR };
-          scr_add_lines (nlcr, ecb_array_length (nlcr), 1);
+          unicode_t nlcr[] = { C0_LF, C0_CR };
+          scr_add_lines (nlcr, 1, 2);
         }
         break;
 
@@ -3274,7 +3225,7 @@ rxvt_term::process_window_ops (const int *args, unsigned int nargs)
 /*----------------------------------------------------------------------*/
 /*
  * get input up until STRING TERMINATOR (or BEL)
- * ends_how is terminator used. returned input must be free ()d
+ * ends_how is terminator used. returned input must be free()'d
  */
 unsigned char *
 rxvt_term::get_to_st (unicode_t &ends_how)
@@ -3304,11 +3255,9 @@ rxvt_term::get_to_st (unicode_t &ends_how)
           seen_esc = true;
           continue;
         }
-      else if (ch == C0_BEL || ch == CHAR_ST)
-        break;
-      else if (ch == C0_SYN)
-        ch = cmd_get8 ();
-      else if (ch < 0x20)
+      else if (ch == C0_HT)
+        ch = ' ';	/* translate '\t' to space */
+      else if (ch < 0x20 && (ch != C0_LF && ch != C0_CR))
         return NULL;	/* other control character - exit */
 
       if (n < sizeof (string) - 1)
@@ -3988,14 +3937,13 @@ rxvt_term::process_sgr_mode (unsigned int nargs, const int *arg)
           case 8:
             // invisible. NYI
             break;
-          //case 9: // crossed out
-          //case 10: // scoansi acs off, primary font
-          //case 11: // scoansi acs on, first alt font
-          //case 12: // scoansi acs on, |0x80, second alt font
-          //...
-          //case 19: // ninth alt font
-          //case 20: // gothic
-          case 21: // disable bold, faint, sometimes doubly underlined (iso 8613)
+          //case 10: // scoansi acs off
+          //case 11: // scoansi acs on
+          //case 12: // scoansi acs on, |0x80
+          case 21: // disable bold, blink and invis (some terminals use this)
+            rendset = 0, rendstyle = RS_Bold | RS_Blink;
+            break;
+          case 22:
             rendset = 0, rendstyle = RS_Bold;
             break;
           case 22: // bold off (vt220)
@@ -4113,6 +4061,7 @@ rxvt_term::process_sgr_mode (unsigned int nargs, const int *arg)
     }
 }
 
+/*{{{ (do not) process Rob Nation's own graphics mode sequences */
 void
 rxvt_term::set_cursor_style (int style)
 {

@@ -4,7 +4,7 @@
  *
  * Copyright (c) 1997,1998 mj olesen <olesen@me.QueensU.CA>
  * Copyright (c) 1999-2001 Geoff Wing <gcw@pobox.com>
- * Copyright (c) 2004-2006 Marc Lehmann <schmorp@schmorp.de>
+ * Copyright (c) 2004      Marc Lehmann <pcg@goof.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,7 +28,7 @@
 #if defined(PLAIN_SCROLLBAR)
 
 int
-scrollBar_t::show_plain (int update)
+rxvt_term::scrollbar_show_plain (int update __attribute__ ((unused)), int last_top, int last_bot, int scrollbar_len)
 {
   int xsb = 0;
   int sbwidth = width - 1;

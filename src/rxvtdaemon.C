@@ -1,13 +1,13 @@
-/*----------------------------------------------------------------------*
+/*--------------------------------*-C-*---------------------------------*
  * File:	rxvtdaemon.C
  *----------------------------------------------------------------------*
  *
  * All portions of code are copyright by their respective author/s.
- * Copyright (c) 2003-2007 Marc Lehmann <schmorp@schmorp.de>
+ * Copyright (c) 2003-2004 Marc Lehmann <pcg@goof.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 3 of the License, or
+ * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
@@ -19,6 +19,11 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *----------------------------------------------------------------------*/
+
+#include <stdint.h>
+#include <cstdlib>
+#include <cstring>
+#include <cstdio>
 
 #include <stdlib.h>
 #include <string.h>
