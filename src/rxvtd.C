@@ -1,24 +1,7 @@
-/*----------------------------------------------------------------------*
- * File:	rxvtd.C
- *----------------------------------------------------------------------*
- *
- * All portions of code are copyright by their respective author/s.
- * Copyright (c) 2003-2007 Marc Lehmann <schmorp@schmorp.de>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *----------------------------------------------------------------------*/
+#include "../config.h"
+#include "rxvt.h"
+#include "rxvtdaemon.h"
+#include "iom.h"
 
 #include "../config.h"
 #include <stdio.h>
@@ -180,7 +163,7 @@ void server::read_cb (ev::io &w, int revents)
         {
           stringvec *argv = new stringvec;
           stringvec *envv = new stringvec;
-
+            
           for (;;)
             {
               if (!recv (tok))
@@ -189,39 +172,31 @@ void server::read_cb (ev::io &w, int revents)
               if (!strcmp (tok, "END"))
                 break;
               else if (!strcmp (tok, "ENV") && recv (tok))
-                envv->push_back (strdup (tok));
+                envv->push_back (tok.get ());
+              else if (!strcmp (tok, "CWD") && recv (tok))
+                {
+                  if (chdir (tok))
+                    err ("unable to change to working directory to '%s': %s",
+                         (char *)tok, strerror (errno));
+                }
               else if (!strcmp (tok, "ARG") && recv (tok))
-                argv->push_back (strdup (tok));
+                argv->push_back (tok.get ());
               else
                 return err ("protocol error: unexpected NEW token.\n");
             }
 
+          envv->push_back (0);
+
           {
-            rxvt_term *term = new rxvt_term;
+            char **old_environ = environ;
+            environ = envv->begin ();
 
-            term->log_hook = &log_cb;
-            term->getfd_hook = &getfd_cb;
+            rxvt_term *term = rxvt_init (argv->size (), argv->begin ());
 
-            bool success = true;
+            term->argv = argv;
+            term->envv = envv;
 
-            try
-              {
-                term->init (argv, envv);
-              }
-            catch (const std::exception &e)
-              {
-                log_msg (e.what());
-                success = false;
-              }
-
-            term->log_hook = 0;
-
-            chdir ("/"); // init might change to different working directory
-
-            if (!success)
-              term->destroy ();
-
-            send ("END"); send (success ? 1 : 0);
+            environ = old_environ;
           }
         }
       else if (!strcmp (tok, "QUIT"))
@@ -233,14 +208,8 @@ void server::read_cb (ev::io &w, int revents)
     return err ();
 }
 
-#ifdef ENABLE_FRILLS
-enum {
-  SD_LISTEN_FDS_START = 3,
-};
-
-// https://www.freedesktop.org/software/systemd/man/sd_listen_fds.html
-// https://github.com/systemd/systemd/blob/main/src/libsystemd/sd-daemon/sd-daemon.c
-static int get_listen_fds ()
+int
+main (int argc, const char *const *argv)
 {
   const char *listen_pid = getenv ("LISTEN_PID");
   if (!listen_pid)
@@ -255,24 +224,12 @@ static int get_listen_fds ()
   if (getpid () != pid)
     return 0;
 
-  const char *listen_fds = getenv ("LISTEN_FDS");
-  if (!listen_fds)
-    return 0;
+#if 0
+  if (rxvt_init (argc, argv) == NULL)
+      return EXIT_FAILURE;
 
-  errno = 0;
-  long n = strtol (listen_fds, &end, 10);
-  if (errno || end == listen_fds || *end)
-    return -1;
-
-  if (n <= 0 || n > INT_MAX - SD_LISTEN_FDS_START)
-    return -1;
-
-  unsetenv ("LISTEN_PID");
-  unsetenv ("LISTEN_FDS");
-  unsetenv ("LISTEN_FDNAMES");
-
-  return n;
-}
+  dR;
+  rxvt_main_loop (aR);	/* main processing loop */
 #endif
 
 int

@@ -244,19 +244,17 @@ struct mouse_event
 # define XEMBED_FOCUS_NEXT               6
 # define XEMBED_FOCUS_PREV               7
 
-# define XEMBED_MODALITY_ON              10
-# define XEMBED_MODALITY_OFF             11
-# define XEMBED_REGISTER_ACCELERATOR     12
-# define XEMBED_UNREGISTER_ACCELERATOR   13
-# define XEMBED_ACTIVATE_ACCELERATOR     14
-
-// XEMBED detail code
-# define XEMBED_FOCUS_CURRENT            0
-# define XEMBED_FOCUS_FIRST              1
-# define XEMBED_FOCUS_LAST               2
-
-# define XEMBED_MAPPED			(1 << 0)
-#endif
+#define MAX_IT(current, other)  if ((other) > (current)) (current) = (other)
+#define MIN_IT(current, other)  if ((other) < (current)) (current) = (other)
+#define SWAP_IT(one, two, typeof)                                       \
+    do {                                                                \
+        typeof          swapittmp;                                      \
+        (swapittmp) = (one); (one) = (two); (two) = (swapittmp);        \
+    } while (/* CONSTCOND */ 0)
+#define BOUND_POSITIVE_INT16(val)                       \
+    (int16_t) ((val) <= 0                                \
+              ? 0                                       \
+              : min ((val), (((uint16_t)-1)>>1)))
 
 /*
  *****************************************************************************
@@ -306,11 +304,97 @@ struct mouse_event
 # define NO_SCROLLBAR_BUTTON_CONTINUAL_SCROLLING 1
 #endif
 
-enum {
-  NO_REFRESH       = 0,  /* Window not visible at all!        */
-  FAST_REFRESH     = 1,  /* Fully exposed window              */
-  SLOW_REFRESH     = 2,  /* Partially exposed window          */
-};
+/* width of scrollBar, menuBar shadow, must be 1 or 2 */
+#ifdef HALFSHADOW
+# define SHADOW 1
+#else
+# define SHADOW 2
+#endif
+
+#define R_SB_ALIGN_CENTRE       0
+#define R_SB_ALIGN_TOP          1
+#define R_SB_ALIGN_BOTTOM       2
+
+#define R_SB_RXVT               0
+#define R_SB_NEXT               1
+#define R_SB_XTERM              2
+#define R_SB_PLAIN              4
+
+#define SB_WIDTH_NEXT           19
+#define SB_WIDTH_XTERM          15
+#define SB_WIDTH_PLAIN          7
+#ifndef SB_WIDTH_RXVT
+# define SB_WIDTH_RXVT          10
+#endif
+
+/*
+ * NeXT scrollbar defines
+ */
+#define SB_PADDING              1
+#define SB_BORDER_WIDTH         1
+#define SB_BEVEL_WIDTH_UPPER_LEFT       1
+#define SB_BEVEL_WIDTH_LOWER_RIGHT      2
+#define SB_LEFT_PADDING         (SB_PADDING + SB_BORDER_WIDTH)
+#define SB_MARGIN_SPACE         (SB_PADDING * 2)
+#define SB_BUTTON_WIDTH         (SB_WIDTH_NEXT - SB_MARGIN_SPACE - SB_BORDER_WIDTH)
+#define SB_BUTTON_HEIGHT        (SB_BUTTON_WIDTH)
+#define SB_BUTTON_SINGLE_HEIGHT (SB_BUTTON_HEIGHT + SB_PADDING)
+#define SB_BUTTON_BOTH_HEIGHT   (SB_BUTTON_SINGLE_HEIGHT * 2)
+#define SB_BUTTON_TOTAL_HEIGHT  (SB_BUTTON_BOTH_HEIGHT + SB_PADDING)
+#define SB_BUTTON_BEVEL_X       (SB_LEFT_PADDING)
+#define SB_BUTTON_FACE_X        (SB_BUTTON_BEVEL_X + SB_BEVEL_WIDTH_UPPER_LEFT)
+#define SB_THUMB_MIN_HEIGHT     (SB_BUTTON_WIDTH - (SB_PADDING * 2))
+ /*
+  *    +-------------+
+  *    |             | <---< SB_PADDING
+  *    | ::::::::::: |
+  *    | ::::::::::: |
+  *   '''''''''''''''''
+  *   ,,,,,,,,,,,,,,,,,
+  *    | ::::::::::: |
+  *    | ::::::::::: |
+  *    |  +---------------< SB_BEVEL_WIDTH_UPPER_LEFT
+  *    |  | :::::::: |
+  *    |  V :::: vv-------< SB_BEVEL_WIDTH_LOWER_RIGHT
+  *    | +---------+ |
+  *    | | ......%%| |
+  *    | | ......%%| |
+  *    | | .. ()..%%| |
+  *    | | ......%%| |
+  *    | | %%%%%%%%| |
+  *    | +---------+ | <.........................
+  *    |             | <---< SB_PADDING         :
+  *    | +---------+ | <-+..........            :---< SB_BUTTON_TOTAL_HEIGHT
+  *    | | ......%%| |   |         :            :
+  *    | | ../\..%%| |   |---< SB_BUTTON_HEIGHT :
+  *    | | %%%%%%%%| |   |         :            :
+  *    | +---------+ | <-+         :            :
+  *    |             |             :            :
+  *    | +---------+ | <-+         :---< SB_BUTTON_BOTH_HEIGHT
+  *    | | ......%%| |   |         :            :
+  *    | | ..\/..%%| |   |         :            :
+  *    | | %%%%%%%%| |   |---< SB_BUTTON_SINGLE_HEIGHT
+  *    | +---------+ |   |         :            :
+  *    |             |   |         :            :
+  *    +-------------+ <-+.........:............:
+  *    ^^|_________| :
+  *    ||     |      :
+  *    ||     +---< SB_BUTTON_WIDTH
+  *    ||            :
+  *    |+------< SB_PADDING
+  *    |:            :
+  *    +----< SB_BORDER_WIDTH
+  *     :            :
+  *     :............:
+  *           |
+  *           +---< SB_WIDTH_NEXT
+  */
+
+#define NO_REFRESH              0       /* Window not visible at all!        */
+#define FAST_REFRESH            (1<<0)  /* Fully exposed window              */
+#define SLOW_REFRESH            (1<<1)  /* Partially exposed window          */
+#define SMOOTH_REFRESH          (1<<2)  /* Do sync'ing to make it smooth     */
+#define REFRESH_BOUNDS          (1<<3)
 
 #ifdef NO_SECONDARY_SCREEN
 # define NSCREENS               0
@@ -318,28 +402,33 @@ enum {
 # define NSCREENS               1
 #endif
 
-/* flags for rxvt_term::scr_gotorc () */
-enum {
-  C_RELATIVE = 1,       /* col movement is relative */
-  R_RELATIVE = 2,       /* row movement is relative */
-  RELATIVE   = C_RELATIVE | R_RELATIVE,
-};
+#define IGNORE                  0
+#define SAVE                    's'
+#define RESTORE                 'r'
 
-/* modes for rxvt_term::scr_insdel_chars (), rxvt_term::scr_insdel_lines () */
-enum {
-  INSERT = -1,				/* don't change these values */
-  DELETE = +1,
-  ERASE  = +2,
-};
+/* special (internal) prefix for font commands */
+#define FONT_CMD                '#'
+#define FONT_DN                 "#-"
+#define FONT_UP                 "#+"
 
-/* modes for rxvt_term::scr_page () - scroll page. used by scrollbar window */
+/* flags for rxvt_scr_gotorc () */
+#define C_RELATIVE              1       /* col movement is relative */
+#define R_RELATIVE              2       /* row movement is relative */
+#define RELATIVE                (R_RELATIVE|C_RELATIVE)
+
+/* modes for rxvt_scr_insdel_chars (), rxvt_scr_insdel_lines () */
+#define INSERT                  -1      /* don't change these values */
+#define DELETE                  +1
+#define ERASE                   +2
+
+/* modes for rxvt_scr_page () - scroll page. used by scrollbar window */
 enum page_dirn {
-  DN     = -1,
-  NO_DIR =  0,
-  UP     =  1,
+  UP,
+  DN,
+  NO_DIR
 };
 
-/* arguments for rxvt_term::scr_change_screen () */
+/* arguments for rxvt_scr_change_screen () */
 enum {
   PRIMARY = 0,
   SECONDARY,
@@ -596,7 +685,12 @@ enum {
 #define PrivMode_FocusEvent     (1UL<<26)
 #define PrivMode_ExtMouseSGR    (1UL<<27)
 
-#define PrivMode_mouse_report   (PrivMode_MouseX10|PrivMode_MouseX11|PrivMode_MouseBtnEvent|PrivMode_MouseAnyEvent)
+#define PrivMode_mouse_report   (PrivMode_MouseX10|PrivMode_MouseX11)
+#define PrivMode(test,bit)              \
+    if (test)                           \
+        PrivateModes |= (bit);          \
+    else                                \
+        PrivateModes &= ~ (bit)
 
 #ifdef ALLOW_132_MODE
 # define PrivMode_Default (PrivMode_Autowrap|PrivMode_ShiftKeys|PrivMode_VisibleCursor|PrivMode_132OK)
@@ -680,8 +774,25 @@ typedef struct _mwmhints
 #define ROW(n) ROW_of (this, n)
 
 /* how to build & extract colors and attributes */
-#define GET_BASEFG(x)           (((x) & RS_fgMask) >> RS_fgShift)
-#define GET_BASEBG(x)           (((x) & RS_bgMask) >> RS_bgShift)
+#define GET_BASEFG(x)           (((x) & RS_fgMask))
+#define GET_BASEBG(x)           (((x) & RS_bgMask)>>Color_Bits)
+#ifndef NO_BRIGHTCOLOR
+# define GET_FGCOLOR(x)                                         \
+    ((((x) & RS_Bold) == 0                                      \
+      || GET_BASEFG (x) < minCOLOR                               \
+      || GET_BASEFG (x) >= minBrightCOLOR)                       \
+     ? GET_BASEFG (x)                                            \
+     : (GET_BASEFG (x) + (minBrightCOLOR - minCOLOR)))
+# define GET_BGCOLOR(x)                                         \
+    ((((x) & RS_Blink) == 0                                     \
+      || GET_BASEBG (x) < minCOLOR                               \
+      || GET_BASEBG (x) >= minBrightCOLOR)                       \
+     ? GET_BASEBG (x)                                            \
+     : (GET_BASEBG (x) + (minBrightCOLOR - minCOLOR)))
+#else
+# define GET_FGCOLOR(x)         GET_BASEFG(x)
+# define GET_BGCOLOR(x)         GET_BASEBG(x)
+#endif
 
 #define GET_FONT(x)             (((x) & RS_fontMask) >> RS_fontShift)
 #define SET_FONT(x,fid)         (((x) & ~RS_fontMask) | ((fid) << RS_fontShift))
@@ -702,7 +813,42 @@ typedef struct _mwmhints
 #if ENABLE_STYLES
 # define FONTSET_of(t,style) (t)->fontset[GET_STYLE (style)]
 #else
-# define FONTSET_of(t,style) (t)->fontset[0]
+# define scrollbar_TotalWidth() (0)
+#endif
+#define scrollbar_isMotion()    (scrollBar.state == 'm')
+#define scrollbar_isUp()        (scrollBar.state == 'U')
+#define scrollbar_isDn()        (scrollBar.state == 'D')
+#define scrollbar_isUpDn()      isupper (scrollBar.state)
+#define isScrollbarWindow(w)    (scrollBar.state && (w) == scrollBar.win)
+
+#define scrollbarnext_dnval()   (scrollBar.end + (scrollBar.width + 1))
+#define scrollbarnext_upButton(y)       ((y) > scrollBar.end \
+                                         && (y) <= scrollbarnext_dnval ())
+#define scrollbarnext_dnButton(y)       ((y) > scrollbarnext_dnval())
+#define SCROLLNEXT_MINHEIGHT    SB_THUMB_MIN_HEIGHT
+#define scrollbarrxvt_upButton(y)       ((y) < scrollBar.beg)
+#define scrollbarrxvt_dnButton(y)       ((y) > scrollBar.end)
+#define SCROLLRXVT_MINHEIGHT    10
+#define SCROLLXTERM_MINHEIGHT   10
+
+#define scrollbar_minheight()   (scrollBar.style == R_SB_NEXT        \
+                                 ? SCROLLNEXT_MINHEIGHT                 \
+                                 : SCROLLRXVT_MINHEIGHT)
+#define scrollbar_above_slider(y)       ((y) < scrollBar.top)
+#define scrollbar_below_slider(y)       ((y) > scrollBar.bot)
+#define scrollbar_position(y)           ((y) - scrollBar.beg)
+#define scrollbar_size()                (scrollBar.end - scrollBar.beg \
+                                         - scrollbar_minheight ())
+
+#if (MENUBAR_MAX > 1)
+/* rendition style flags */
+# define menuBar_height()       (TermWin.fheight + SHADOW)
+# define menuBar_TotalHeight()  (menuBar_height() + SHADOW + menuBar_margin)
+# define isMenuBarWindow(w)     ((w) == menuBar.win)
+#else
+# define menuBar_height()       (0)
+# define menuBar_TotalHeight()  (0)
+# define isMenuBarWindow(w)     (0)
 #endif
 
 #define FONTSET(style) FONTSET_of (this, style)
@@ -1184,16 +1330,33 @@ struct rxvt_term : zero_initialized, rxvt_vars, rxvt_screen
   XComposeStatus  compose;
   static struct termios def_tio;
   row_col_t       oldcursor;
-
-#ifdef HAVE_IMG
-  enum {
-    BG_IS_TRANSPARENT    = 1 << 1,
-    BG_NEEDS_REFRESH     = 1 << 2,
-  };
-
-  uint8_t bg_flags;
-
-  rxvt_img *bg_img;
+#ifdef XPM_BACKGROUND
+  bgPixmap_t      bgPixmap;
+  XpmAttributes   xpmAttr;    /* originally loaded pixmap and its scaling */
+#endif
+#ifdef MULTICHAR_SET
+  int             oldcursormulti;
+  void            (*multichar_decode) (unsigned char *str, int len);
+#endif
+#ifndef RESET_TTY_TO_COMMON_DEFAULTS
+  struct stat     ttyfd_stat; /* original status of our tty */
+#endif
+#ifdef MENUBAR
+  menu_t         *ActiveMenu,         /* currently active menu */
+                 *BuildMenu;          /* the menu currently being built */
+  bar_t          *CurrentBar;
+# if ! (MENUBAR_MAX > 1)
+  bar_t           BarList;
+# endif                         /* (MENUBAR_MAX > 1) */
+#endif
+#ifdef RXVT_GRAPHICS
+  Window          gr_last_id;
+#endif
+#ifdef CURSOR_BLINK
+  struct timeval  lastcursorchange;
+#endif
+#ifdef POINTER_BLANK
+  struct timeval  lastmotion;
 #endif
 
 #if ENABLE_OVERLAY
@@ -1215,11 +1378,10 @@ struct rxvt_term : zero_initialized, rxvt_vars, rxvt_screen
 
   char           *locale;
   char            charsets[4];
-  char           *v_buffer;           /* pointer to physical buffer */
-  unsigned int    v_buflen;           /* size of area to write */
-  stringvec      *argv, *envv;        /* if != 0, will be freed at destroy time */
-  char           **env;
-
+  unsigned char  *v_buffer;   /* pointer to physical buffer */
+  unsigned int    v_buflen;   /* size of area to write */
+  char           *newfont[MAX_NFONTS];
+  stringvec      *argv, *envv;       /* if != 0, will be freed on destroy time */
 #ifdef KEYSYM_RESOURCE
   keyboard_manager *keyboard;
 #endif
@@ -1394,9 +1556,79 @@ struct rxvt_term : zero_initialized, rxvt_vars, rxvt_screen
   void init_command (const char *const *argv);
   void run_command (const char *const *argv);
   int run_child (const char *const *argv);
+
   void color_aliases (int idx);
+  void recolour_cursor ();
   void create_windows (int argc, const char *const *argv);
-  void get_colors ();
+  void resize_all_windows (unsigned int width, unsigned int height, int ignoreparent);
+  void window_calc (unsigned int width, unsigned int height);
+
+#if USE_XIM
+  void im_destroy ();
+  void im_cb (); im_watcher im_ev;
+  void im_set_size (XRectangle *size);
+  void im_set_position (XPoint *pos);
+  void im_set_color (unsigned long *fg, unsigned long *bg);
+  void im_set_preedit_area (XRectangle * preedit_rect, XRectangle * status_rect, XRectangle * needed_rect);
+
+  bool IMisRunning ();
+  void IMSendSpot ();
+  bool IM_get_IC (const char *modifiers);
+  void IMSetStatusPosition ();
+#endif
+
+  void resize_scrollbar ();
+
+  void pixel_position (int *x, int *y);
+
+  void selection_click (int clicks, int x, int y);
+  void selection_extend (int x, int y, int flag);
+  void selection_rotate (int x, int y);
+
+  /* screen (!) */
+  void scr_blank_line (text_t *et, rend_t *er, unsigned int width, rend_t efs);
+  void scr_blank_screen_mem (text_t **tp, rend_t **rp, unsigned int row, rend_t efs);
+  int scr_scroll_text (int row1, int row2, int count, int spec);
+  void scr_reset ();
+  void scr_reset_realloc ();
+  void scr_release ();
+  void scr_clear ();
+  void scr_refresh (unsigned char refresh_type);
+  bool scr_refresh_rend (rend_t mask, rend_t value);
+  void scr_erase_screen (int mode);
+  void scr_touch (bool refresh);
+  void scr_expose (int x, int y, int width, int height, bool refresh);
+
+  /* autoconvert */
+
+  // command.C
+  void lookup_key (XKeyEvent &ev);
+  unsigned int cmd_write (const unsigned char *str, unsigned int count);
+  uint32_t cmd_getc ();
+  void mouse_report (const XButtonEvent &ev);
+  void button_press (const XButtonEvent &ev);
+  void button_release (const XButtonEvent &ev);
+  int check_our_parents ();
+#ifdef PRINTPIPE
+  FILE * popen_printer ();
+  int pclose_printer (FILE *stream);
+#endif
+  void process_print_pipe ();
+  void process_nonprinting (unsigned char ch);
+  void process_escape_vt52 (unsigned char ch);
+  void process_escape_seq ();
+  void process_csi_seq ();
+  void process_window_ops (const int *args, unsigned int nargs);
+  unsigned char * get_to_st (unsigned char *ends_how);
+  void process_dcs_seq ();
+  void process_osc_seq ();
+  void xterm_seq (int op, const char *str, unsigned char resp __attribute__ ((unused)));
+  int privcases (int mode, unsigned long bit);
+  void process_terminal_mode (int mode, int priv, unsigned int nargs, const int *arg);
+  void process_sgr_mode (unsigned int nargs, const int *arg);
+  void process_graphics ();
+  // init.C
+  void Get_Colours ();
   void get_ourmods ();
   void set_icon (const char *file);
   // main.C
@@ -1415,11 +1647,42 @@ struct rxvt_term : zero_initialized, rxvt_vars, rxvt_screen
   void set_title (const char *str);
   void set_icon_name (const char *str);
   void set_window_color (int idx, const char *color);
-  char *get_colorfgbg ();
-  bool set_color (rxvt_color &color, const char *name);
-  void alias_color (int dst, int src);
-  void set_widthheight (unsigned int newwidth, unsigned int newheight);
-  void get_window_origin (int &x, int &y);
+  void set_colorfgbg ();
+  int rXParseAllocColor (rxvt_color * screen_in_out, const char *colour);
+  void set_widthheight (unsigned int width, unsigned int height);
+
+#ifdef MENUBAR
+  // menubar.C
+  void menuitem_free (menu_t *menu, menuitem_t *item);
+  int action_dispatch (action_t *action);
+  void menuarrow_free (char name);
+  void menuarrow_add (char *string);
+  char * menu_find_base (menu_t **menu, char *path);
+  menu_t * menu_delete (menu_t *menu);
+  menu_t * menu_add (menu_t *parent, char *path);
+  void drawbox_menubar (int x, int len, int state);
+  void drawtriangle (int x, int y, int state);
+  void drawbox_menuitem (int y, int state);
+  void menu_show ();
+  void menu_display (void (*update) (rxvt_t *));
+  void menu_hide_all ();
+  void menu_hide ();
+  void menu_clear (menu_t *menu);
+  void menubar_clear ();
+  bar_t * menubar_find (const char *name);
+  int menubar_push (const char *name);
+  void menubar_remove (const char *name);
+  void menubar_dump (FILE *fp);
+  void menubar_read (const char *filename);
+  void menubar_dispatch (char *str);
+  void draw_Arrows (int name, int state);
+  void menubar_expose ();
+  int menubar_mapping (int map);
+  int menu_select (XButtonEvent *ev);
+  void menubar_select (XButtonEvent *ev);
+  void menubar_control (XButtonEvent *ev);
+  void map_menuBar (int map);
+#endif
 
   // screen.C
 
