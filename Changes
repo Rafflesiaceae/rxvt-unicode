@@ -9,6 +9,7 @@
         - fix bugs in x flushing, causing an empty screen after startup
         - fix various memleaks in rxvtd.
         - countless minor bugfixes.
+        - removed greek support.
 
 1.8  Mon Feb  2 20:09:18 CET 2004
 	- almost total conversion to C++. Except for introducing

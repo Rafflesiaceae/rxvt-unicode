@@ -110,7 +110,32 @@ typedef  int32_t tlen_t_; // specifically for use in the line_t structure
  *****************************************************************************
  */
 
-#include <termios.h>
+
+#ifndef HAVE_XPOINTER
+typedef char   *XPointer;
+#endif
+
+#ifdef HAVE_TERMIOS_H
+# include <termios.h>
+typedef struct termios ttymode_t;
+#else
+# include <sgtty.h>
+typedef struct {
+  struct sgttyb   sg;
+  struct tchars   tc;
+  struct ltchars  lc;
+  int             line;
+  int             local;
+} ttymode_t;
+#endif
+
+#ifdef XPM_BACKGROUND
+# ifdef XPM_INC_X11
+#  include <X11/xpm.h>
+# else
+#  include <xpm.h>
+# endif
+#endif
 
 #ifndef STDIN_FILENO
 # define STDIN_FILENO   0
@@ -647,11 +672,90 @@ enum colour_list {
  * Resource list
  */
 enum {
-# define def(name) Rs_ ## name,
-# define reserve(name,count) Rs_ ## name ## _ = Rs_ ## name + (count) - 1,
-# include "rsinc.h"
-# undef def
-# undef reserve
+  Rs_display_name = 0,
+  Rs_term_name,
+  Rs_iconName,
+  Rs_geometry,
+  Rs_reverseVideo,
+  Rs_color,
+  _Rs_color = Rs_color + NRS_COLORS - 1,
+  Rs_font,
+  Rs_name,
+  Rs_title,
+#if defined (XPM_BACKGROUND) || (MENUBAR_MAX)
+  Rs_path,
+#endif
+#ifdef XPM_BACKGROUND
+  Rs_backgroundPixmap,
+#endif
+#if (MENUBAR_MAX)
+  Rs_menu,
+#endif
+  Rs_loginShell,
+  Rs_jumpScroll,
+#ifdef HAVE_SCROLLBARS
+  Rs_scrollBar,
+  Rs_scrollBar_right,
+  Rs_scrollBar_floating,
+  Rs_scrollBar_align,
+#endif
+  Rs_scrollstyle,     /* Rs_scrollBar_style */
+  Rs_scrollTtyOutput,
+  Rs_scrollTtyKeypress,
+  Rs_scrollWithBuffer,
+  Rs_saveLines,
+  Rs_utmpInhibit,
+  Rs_visualBell,
+#if ! defined(NO_MAPALERT) && defined(MAPALERT_OPTION)
+  Rs_mapAlert,
+#endif
+#ifdef META8_OPTION
+  Rs_meta8,
+#endif
+#ifdef MOUSE_WHEEL
+  Rs_mouseWheelScrollPage,
+#endif
+#ifndef NO_BACKSPACE_KEY
+  Rs_backspace_key,
+#endif
+#ifndef NO_DELETE_KEY
+  Rs_delete_key,
+#endif
+  Rs_selectstyle,
+#ifdef PRINTPIPE
+  Rs_print_pipe,
+#endif
+#ifdef USE_XIM
+  Rs_preeditType,
+  Rs_inputMethod,
+#endif
+#if defined (HOTKEY_CTRL) || defined (HOTKEY_META)
+  Rs_bigfont_key,
+  Rs_smallfont_key,
+#endif
+#ifdef TRANSPARENT
+  Rs_transparent,
+  Rs_transparent_all,
+#endif
+#ifndef NO_FRILLS
+  Rs_ext_bwidth,
+  Rs_int_bwidth,
+#endif
+  Rs_scrollBar_thickness,
+#ifndef NO_LINESPACE
+  Rs_lineSpace,
+#endif
+  Rs_cutchars,
+#ifdef ACS_ASCII
+  Rs_acs_chars,
+#endif
+  Rs_modifier,
+  Rs_answerbackstring,
+  Rs_tripleclickwords,
+  Rs_cursorBlink,
+  Rs_pointerBlank,
+  Rs_pointerBlankDelay,
+  Rs_imLocale,
   NUM_RESOURCES
 };
 
@@ -1229,13 +1333,10 @@ struct rxvt_term : zero_initialized, rxvt_vars, rxvt_screen
                   meta_char;            /* Alt-key prefix */
 #endif
 /* ---------- */
-  bool            rvideo_state, rvideo_mode;
-#ifndef NO_BELL
-  bool            rvideo_bell;
-#endif
-  int             num_scr;              /* screen: number of lines scrolled */
-  int             prev_ncol,            /* screen: previous number of columns */
-                  prev_nrow;            /* screen: previous number of rows */
+  short           rvideo;
+  int16_t         num_scr;    /* screen: number lines scrolled             */
+  unsigned int    prev_ncol,  /* screen: previous number of columns        */
+                  prev_nrow;  /* screen: previous number of rows           */
 /* ---------- */
   rend_t          rstyle;
 /* ---------- */
@@ -1276,17 +1377,46 @@ struct rxvt_term : zero_initialized, rxvt_vars, rxvt_screen
   rxvt_selection *selection_req;
   pid_t           cmd_pid;    /* process id of child */
 /* ---------- */
+  Cursor          leftptr_cursor;
+#ifdef POINTER_BLANK
+  Cursor          blank_cursor;
+#endif
+/* ---------- */
+  const char     *ttydev;     /* pty/tty name */
+#ifndef NO_BACKSPACE_KEY
+  const char     *key_backspace;
+#endif
+#ifndef NO_DELETE_KEY
+  const char     *key_delete;
+#endif
+#if defined (HOTKEY_CTRL) || defined (HOTKEY_META)
+  KeySym          ks_bigfont, ks_smallfont;
+#endif
+#ifdef USE_XIM
+  rxvt_xim       *input_method;
+  XIC             Input_Context;
+  XIMStyle        input_style;
+  int             event_type;
+#endif
   struct mouse_event MEvent;
   XComposeStatus  compose;
-  static struct termios def_tio;
+  ttymode_t       tio;
+#ifdef UTMP_SUPPORT
+# ifdef HAVE_STRUCT_UTMP
+  struct utmp     ut;
+# endif
+# ifdef HAVE_STRUCT_UTMPX
+  struct utmpx    utx;
+# endif
+# if (defined(HAVE_STRUCT_UTMP) && defined(HAVE_UTMP_PID)) || defined(HAVE_STRUCT_UTMPX)
+  char            ut_id[5];
+# endif
+  int             utmp_pos;
+#endif
   row_col_t       oldcursor;
 #ifdef XPM_BACKGROUND
   bgPixmap_t      bgPixmap;
   XpmAttributes   xpmAttr;    /* originally loaded pixmap and its scaling */
-#endif
-#ifdef MULTICHAR_SET
-  int             oldcursormulti;
-  void            (*multichar_decode) (unsigned char *str, int len);
 #endif
 #ifndef RESET_TTY_TO_COMMON_DEFAULTS
   struct stat     ttyfd_stat; /* original status of our tty */
@@ -1298,9 +1428,6 @@ struct rxvt_term : zero_initialized, rxvt_vars, rxvt_screen
 # if ! (MENUBAR_MAX > 1)
   bar_t           BarList;
 # endif                         /* (MENUBAR_MAX > 1) */
-#endif
-#ifdef RXVT_GRAPHICS
-  Window          gr_last_id;
 #endif
 #ifdef CURSOR_BLINK
   struct timeval  lastcursorchange;

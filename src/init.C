@@ -583,6 +583,22 @@ rxvt_term::init_vars ()
   letterSpace = LETTERSPACE;
   saveLines = SAVELINES;
 
+#ifndef NO_NEW_SELECTION
+  selection_style = NEW_SELECT;
+#else
+  selection_style = OLD_SELECT;
+#endif
+
+#ifndef NO_BRIGHTCOLOR
+  colorfgbg = DEFAULT_RSTYLE;
+#endif
+
+#if defined (HOTKEY_CTRL) || defined (HOTKEY_META)
+  ks_bigfont = XK_greater;
+  ks_smallfont = XK_less;
+#endif
+
+  refresh_limit = 1;
   refresh_type = SLOW_REFRESH;
 
   oldcursor.row = oldcursor.col = -1;
@@ -1238,10 +1254,6 @@ rxvt_term::init_command (const char *const *argv)
       priv_modes |= PrivMode_scrollBar;
       SavedModes |= PrivMode_scrollBar;
     }
-
-#ifdef GREEK_SUPPORT
-  greek_init ();
-#endif
 
 #ifdef CURSOR_BLINK
   if (Options & Opt_cursorBlink)

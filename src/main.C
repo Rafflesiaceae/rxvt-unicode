@@ -440,9 +440,6 @@ rxvt_term::init (int argc, const char *const *argv)
   init_xlocale ();
 
   scr_reset ();         /* initialize screen */
-#ifdef RXVT_GRAPHICS
-  Gr_reset ();          /* reset graphics */
-#endif
 
 #if 0
   XSynchronize (display->display, True);
@@ -1433,9 +1430,17 @@ rxvt_term::resize_all_windows (unsigned int newwidth, unsigned int newheight, in
       if (scrollBar.state)
         scrollBar.resize ();
 
-      XMoveResizeWindow (dpy, vt,
-                         window_vt_x, window_vt_y,
-                         vt_width, vt_height);
+      if (menubar_visible ())
+        XMoveResizeWindow (display->display, menuBar.win, window_vt_x,
+                           0, TermWin_TotalWidth (), menuBar_TotalHeight ());
+
+      XMoveResizeWindow (display->display, TermWin.vt, window_vt_x,
+                         window_vt_y, TermWin_TotalWidth (),
+                         TermWin_TotalHeight ());
+      scr_clear ();
+#ifdef XPM_BACKGROUND
+      resize_pixmap ();
+#endif
 
       HOOK_INVOKE ((this, HOOK_SIZE_CHANGE, DT_INT, newwidth, DT_INT, newheight, DT_END));
     }

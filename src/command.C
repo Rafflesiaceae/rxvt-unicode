@@ -867,6 +867,386 @@ rxvt_term::key_press (XKeyEvent &ev)
           return;
         }
 #endif
+
+      if (keysym >= 0xFF00 && keysym <= 0xFFFF)
+        {
+#ifdef KEYSYM_RESOURCE
+          if (! (shft | ctrl) && Keysym_map[keysym & 0xFF] != NULL)
+            {
+              unsigned int    l;
+              const unsigned char *kbuf0;
+              const unsigned char ch = C0_ESC;
+
+              kbuf0 = (Keysym_map[keysym & 0xFF]);
+              l = (unsigned int)*kbuf0++;
+
+              /* escape prefix */
+              if (meta)
+# ifdef META8_OPTION
+                if (meta_char == C0_ESC)
+# endif
+                  tt_write (&ch, 1);
+              tt_write (kbuf0, l);
+              return;
+            }
+          else
+#endif
+            {
+              newlen = 1;
+              switch (keysym)
+                {
+#ifndef NO_BACKSPACE_KEY
+                  case XK_BackSpace:
+                    if (PrivateModes & PrivMode_HaveBackSpace)
+                      {
+                        kbuf[0] = (!! (PrivateModes & PrivMode_BackSpace)
+                                   ^ !!ctrl) ? '\b' : '\177';
+                        kbuf[1] = '\0';
+                      }
+                    else
+                      STRCPY (kbuf, key_backspace);
+# ifdef MULTICHAR_SET
+                    if ((Options & Opt_mc_hack) && screen.cur.col > 0)
+                      {
+                        int             col, row;
+
+                        newlen = STRLEN (kbuf);
+                        col = screen.cur.col - 1;
+                        row = screen.cur.row + TermWin.saveLines;
+                        if (IS_MULTI2 (screen.rend[row][col]))
+                          MEMMOVE (kbuf + newlen, kbuf, newlen + 1);
+                      }
+# endif
+                    break;
+#endif
+#ifndef NO_DELETE_KEY
+                  case XK_Delete:
+                    STRCPY (kbuf, key_delete);
+# ifdef MULTICHAR_SET
+                    if (Options & Opt_mc_hack)
+                      {
+                        int             col, row;
+
+                        newlen = STRLEN (kbuf);
+                        col = screen.cur.col;
+                        row = screen.cur.row + TermWin.saveLines;
+                        if (IS_MULTI1 (screen.rend[row][col]))
+                          MEMMOVE (kbuf + newlen, kbuf, newlen + 1);
+                      }
+# endif
+                    break;
+#endif
+                  case XK_Tab:
+                    if (shft)
+                      STRCPY (kbuf, "\033[Z");
+                    else
+                      {
+#ifdef CTRL_TAB_MAKES_META
+                        if (ctrl)
+                          meta = 1;
+#endif
+#ifdef MOD4_TAB_MAKES_META
+                        if (ev.state & Mod4Mask)
+                          meta = 1;
+#endif
+                        newlen = 0;
+                      }
+                    break;
+
+#ifdef XK_KP_Left
+                  case XK_KP_Up:		/* \033Ox or standard */
+                  case XK_KP_Down:	/* \033Or or standard */
+                  case XK_KP_Right:	/* \033Ov or standard */
+                  case XK_KP_Left:	/* \033Ot or standard */
+                    if ((PrivateModes & PrivMode_aplKP) ? !shft : shft)
+                      {
+                        STRCPY (kbuf, "\033OZ");
+                        kbuf[2] = "txvr"[keysym - XK_KP_Left];
+                        break;
+                      }
+                    else
+                      /* translate to std. cursor key */
+                      keysym = XK_Left + (keysym - XK_KP_Left);
+                    /* FALLTHROUGH */
+#endif
+                  case XK_Up:	/* "\033[A" */
+                  case XK_Down:	/* "\033[B" */
+                  case XK_Right:	/* "\033[C" */
+                  case XK_Left:	/* "\033[D" */
+                    STRCPY (kbuf, "\033[Z");
+                    kbuf[2] = "DACB"[keysym - XK_Left];
+                    /* do Shift first */
+                    if (shft)
+                      kbuf[2] = "dacb"[keysym - XK_Left];
+                    else if (ctrl)
+                      {
+                        kbuf[1] = 'O';
+                        kbuf[2] = "dacb"[keysym - XK_Left];
+                      }
+                    else if (PrivateModes & PrivMode_aplCUR)
+                      kbuf[1] = 'O';
+#ifdef MULTICHAR_SET
+                    //TODO: ??
+                    if (Options & Opt_mc_hack)
+                      {
+                        int             col, row, m;
+
+                        col = screen.cur.col;
+                        row = screen.cur.row + TermWin.saveLines;
+                        m = 0;
+                        if (keysym == XK_Right
+                            && IS_MULTI1 (screen.rend[row][col]))
+                          m = 1;
+                        else if (keysym == XK_Left)
+                          {
+                            if (col > 0)
+                              {
+                                if (IS_MULTI2 (screen.rend[row][col - 1]))
+                                  m = 1;
+                              }
+                            else if (screen.cur.row > 0)
+                              {
+                                col = screen.tlen[--row];
+                                if (col == -1)
+                                  col = TermWin.ncol - 1;
+                                else
+                                  col--;
+                                if (col > 0
+                                    && IS_MULTI2 (screen.rend[row][col]))
+                                  m = 1;
+                              }
+                          }
+                        if (m)
+                          MEMMOVE (kbuf + 3, kbuf, 3 + 1);
+                      }
+#endif
+                    break;
+
+#ifndef UNSHIFTED_SCROLLKEYS
+# ifdef XK_KP_Prior
+                  case XK_KP_Prior:
+                    /* allow shift to override */
+                    if ((PrivateModes & PrivMode_aplKP) ? !shft : shft)
+                      {
+                        STRCPY (kbuf, "\033Oy");
+                        break;
+                      }
+                    /* FALLTHROUGH */
+# endif
+                  case XK_Prior:
+                    STRCPY (kbuf, "\033[5~");
+                    break;
+# ifdef XK_KP_Next
+                  case XK_KP_Next:
+                    /* allow shift to override */
+                    if ((PrivateModes & PrivMode_aplKP) ? !shft : shft)
+                      {
+                        STRCPY (kbuf, "\033Os");
+                        break;
+                      }
+                    /* FALLTHROUGH */
+# endif
+                  case XK_Next:
+                    STRCPY (kbuf, "\033[6~");
+                    break;
+#endif
+                  case XK_KP_Enter:
+                    /* allow shift to override */
+                    if ((PrivateModes & PrivMode_aplKP) ? !shft : shft)
+                      {
+                        STRCPY (kbuf, "\033OM");
+                      }
+                    else
+                      {
+                        kbuf[0] = '\r';
+                        kbuf[1] = '\0';
+                      }
+                    break;
+
+#ifdef XK_KP_Begin
+                  case XK_KP_Begin:
+                    STRCPY (kbuf, "\033Ou");
+                    break;
+
+                  case XK_KP_Insert:
+                    STRCPY (kbuf, "\033Op");
+                    break;
+
+                  case XK_KP_Delete:
+                    STRCPY (kbuf, "\033On");
+                    break;
+#endif
+                  case XK_KP_F1:	/* "\033OP" */
+                  case XK_KP_F2:	/* "\033OQ" */
+                  case XK_KP_F3:	/* "\033OR" */
+                  case XK_KP_F4:	/* "\033OS" */
+                    STRCPY (kbuf, "\033OP");
+                    kbuf[2] += (keysym - XK_KP_F1);
+                    break;
+
+                  case XK_KP_Multiply:	/* "\033Oj" : "*" */
+                  case XK_KP_Add:	/* "\033Ok" : "+" */
+                  case XK_KP_Separator:	/* "\033Ol" : "," */
+                  case XK_KP_Subtract:	/* "\033Om" : "-" */
+                  case XK_KP_Decimal:	/* "\033On" : "." */
+                  case XK_KP_Divide:	/* "\033Oo" : "/" */
+                  case XK_KP_0:		/* "\033Op" : "0" */
+                  case XK_KP_1:		/* "\033Oq" : "1" */
+                  case XK_KP_2:		/* "\033Or" : "2" */
+                  case XK_KP_3:		/* "\033Os" : "3" */
+                  case XK_KP_4:		/* "\033Ot" : "4" */
+                  case XK_KP_5:		/* "\033Ou" : "5" */
+                  case XK_KP_6:		/* "\033Ov" : "6" */
+                  case XK_KP_7:		/* "\033Ow" : "7" */
+                  case XK_KP_8:		/* "\033Ox" : "8" */
+                  case XK_KP_9:		/* "\033Oy" : "9" */
+                    /* allow shift to override */
+                    if ((PrivateModes & PrivMode_aplKP) ? !shft : shft)
+                      {
+                        STRCPY (kbuf, "\033Oj");
+                        kbuf[2] += (keysym - XK_KP_Multiply);
+                      }
+                    else
+                      {
+                        kbuf[0] = ('*' + (keysym - XK_KP_Multiply));
+                        kbuf[1] = '\0';
+                      }
+                    break;
+
+                  case XK_Find:
+                    STRCPY (kbuf, "\033[1~");
+                    break;
+                  case XK_Insert:
+                    STRCPY (kbuf, "\033[2~");
+                    break;
+#ifdef DXK_Remove		/* support for DEC remove like key */
+                  case DXK_Remove:
+                    /* FALLTHROUGH */
+#endif
+                  case XK_Execute:
+                    STRCPY (kbuf, "\033[3~");
+                    break;
+                  case XK_Select:
+                    STRCPY (kbuf, "\033[4~");
+                    break;
+#ifdef XK_KP_End
+                  case XK_KP_End:
+                    /* allow shift to override */
+                    if ((PrivateModes & PrivMode_aplKP) ? !shft : shft)
+                      {
+                        STRCPY (kbuf, "\033Oq");
+                        break;
+                      }
+                    /* FALLTHROUGH */
+#endif
+                  case XK_End:
+                    STRCPY (kbuf, KS_END);
+                    break;
+#ifdef XK_KP_Home
+                  case XK_KP_Home:
+                    /* allow shift to override */
+                    if ((PrivateModes & PrivMode_aplKP) ? !shft : shft)
+                      {
+                        STRCPY (kbuf, "\033Ow");
+                        break;
+                      }
+                    /* FALLTHROUGH */
+#endif
+                  case XK_Home:
+                    STRCPY (kbuf, KS_HOME);
+                    break;
+
+#define FKEY(n, fkey)							\
+    sprintf ((char *)kbuf,"\033[%2d~", (int) ((n) + (keysym - fkey)))
+
+                  case XK_F1:	/* "\033[11~" */
+                  case XK_F2:	/* "\033[12~" */
+                  case XK_F3:	/* "\033[13~" */
+                  case XK_F4:	/* "\033[14~" */
+                  case XK_F5:	/* "\033[15~" */
+                    FKEY (11, XK_F1);
+                    break;
+                  case XK_F6:	/* "\033[17~" */
+                  case XK_F7:	/* "\033[18~" */
+                  case XK_F8:	/* "\033[19~" */
+                  case XK_F9:	/* "\033[20~" */
+                  case XK_F10:	/* "\033[21~" */
+                    FKEY (17, XK_F6);
+                    break;
+                  case XK_F11:	/* "\033[23~" */
+                  case XK_F12:	/* "\033[24~" */
+                  case XK_F13:	/* "\033[25~" */
+                  case XK_F14:	/* "\033[26~" */
+                    FKEY (23, XK_F11);
+                    break;
+                  case XK_F15:	/* "\033[28~" */
+                  case XK_F16:	/* "\033[29~" */
+                    FKEY (28, XK_F15);
+                    break;
+                  case XK_Help:	/* "\033[28~" */
+                    FKEY (28, XK_Help);
+                    break;
+                  case XK_Menu:	/* "\033[29~" */
+                    FKEY (29, XK_Menu);
+                    break;
+                  case XK_F17:	/* "\033[31~" */
+                  case XK_F18:	/* "\033[32~" */
+                  case XK_F19:	/* "\033[33~" */
+                  case XK_F20:	/* "\033[34~" */
+                  case XK_F21:	/* "\033[35~" */
+                  case XK_F22:	/* "\033[36~" */
+                  case XK_F23:	/* "\033[37~" */
+                  case XK_F24:	/* "\033[38~" */
+                  case XK_F25:	/* "\033[39~" */
+                  case XK_F26:	/* "\033[40~" */
+                  case XK_F27:	/* "\033[41~" */
+                  case XK_F28:	/* "\033[42~" */
+                  case XK_F29:	/* "\033[43~" */
+                  case XK_F30:	/* "\033[44~" */
+                  case XK_F31:	/* "\033[45~" */
+                  case XK_F32:	/* "\033[46~" */
+                  case XK_F33:	/* "\033[47~" */
+                  case XK_F34:	/* "\033[48~" */
+                  case XK_F35:	/* "\033[49~" */
+                    FKEY (31, XK_F17);
+                    break;
+#undef FKEY
+                  default:
+                    newlen = 0;
+                    break;
+                }
+              if (newlen)
+                len = STRLEN (kbuf);
+            }
+          /*
+           * Pass meta for all function keys, if 'meta' option set
+           */
+#ifdef META8_OPTION
+          if (meta && (meta_char == 0x80) && len > 0)
+            kbuf[len - 1] |= 0x80;
+#endif
+
+        }
+      else if (ctrl && keysym == XK_minus)
+        {
+          len = 1;
+          kbuf[0] = '\037';	/* Ctrl-Minus generates ^_ (31) */
+        }
+      else
+        {
+#ifdef META8_OPTION
+          /* set 8-bit on */
+          if (meta && (meta_char == 0x80))
+            {
+              unsigned char  *ch;
+
+              for (ch = kbuf; ch < kbuf + len; ch++)
+                *ch |= 0x80;
+              meta = 0;
+            }
+#endif
+          /* nil */ ;
+        }
     }
 
   if (len <= 0)
@@ -1586,16 +1966,21 @@ rxvt_term::x_cb (XEvent &ev)
           {
             XEvent unused_event;
 
-            while (XCheckTypedWindowEvent (dpy, ev.xany.window, Expose, &unused_event))
-              ;
-            while (XCheckTypedWindowEvent (dpy, ev.xany.window, GraphicsExpose, &unused_event))
-              ;
-
-            if (scrollBar.state && ev.xany.window == scrollBar.win)
+            while (XCheckTypedWindowEvent (display->display, ev.xany.window,
+                                          Expose,
+                                          &unused_event)) ;
+            while (XCheckTypedWindowEvent (display->display, ev.xany.window,
+                                          GraphicsExpose,
+                                          &unused_event)) ;
+            if (isScrollbarWindow (ev.xany.window))
               {
-                scrollBar.state = SB_STATE_IDLE;
-                scrollBar.show (0);
+                scrollBar.setIdle ();
+                scrollbar_show (0);
               }
+#ifdef MENUBAR
+            if (menubar_visible () && isMenuBarWindow (ev.xany.window))
+              menubar_expose ();
+#endif
           }
         break;
 
@@ -1895,20 +2280,7 @@ rxvt_term::button_press (XButtonEvent &ev)
    */
   if (ev.window == vt)
     {
-      if (HOOK_INVOKE ((this, HOOK_BUTTON_PRESS, DT_XEVENT, &ev, DT_END)))
-        return;
-
-#if ISO_14755
-      // 5.4
-      if (iso14755buf & (ISO_14755_STARTED | ISO_14755_54))
-        {
-          iso14755_54 (ev.x, ev.y);
-          return;
-        }
-#endif
-
-      clickintime = ev.time - MEvent.time < multiClickTime;
-
+      clickintime = ev.time - MEvent.time < MULTICLICK_TIME;
       if (reportmode)
         {
           /* mouse report from vt window */
@@ -1917,9 +2289,8 @@ rxvt_term::button_press (XButtonEvent &ev)
 #ifdef MOUSE_REPORT_DOUBLECLICK
           if (ev.button == MEvent.button && clickintime)
             {
-              /* same button, within allowed time */
+              /* same button, within alloted time */
               MEvent.clicks++;
-
               if (MEvent.clicks > 1)
                 {
                   /* only report double clicks */
@@ -1941,27 +2312,18 @@ rxvt_term::button_press (XButtonEvent &ev)
 #else
           MEvent.button = ev.button;
           mouse_report (ev);
-#endif /* MOUSE_REPORT_DOUBLECLICK */
+#endif				/* MOUSE_REPORT_DOUBLECLICK */
 
         }
       else
         {
           if (ev.button != MEvent.button)
             MEvent.clicks = 0;
-
           switch (ev.button)
             {
               case Button1:
-                /* allow meta + click to select rectangular areas */
-                /* should be done in screen.C */
-#if ENABLE_FRILLS
-                selection.rect = !!(ev.state & ModMetaMask);
-#else
-                selection.rect = false;
-#endif
-
                 /* allow shift+left click to extend selection */
-                if (ev.state & ShiftMask && !(priv_modes & PrivMode_mouse_report))
+                if (ev.state & ShiftMask && ! (PrivateModes & PrivMode_mouse_report))
                   {
                     if (MEvent.button == Button1 && clickintime)
                       selection_rotate (ev.x, ev.y);
@@ -1986,12 +2348,10 @@ rxvt_term::button_press (XButtonEvent &ev)
                   selection_rotate (ev.x, ev.y);
                 else
                   selection_extend (ev.x, ev.y, 1);
-
                 MEvent.button = Button3;
                 break;
             }
         }
-
       MEvent.time = ev.time;
       return;
     }
@@ -2142,50 +2502,38 @@ rxvt_term::button_release (XButtonEvent &ev)
     }
 
 #ifdef SELECTION_SCROLLING
-  sel_scroll_ev.stop();
+  pending_scroll_selection=0;
 #endif
-
-  if (ev.window == vt)
+  if (ev.window == TermWin.vt)
     {
-      if (HOOK_INVOKE ((this, HOOK_BUTTON_RELEASE, DT_XEVENT, &ev, DT_END)))
-        return;
-
-#if ISO_14755
-      // 5.4
-      if (iso14755buf & (ISO_14755_STARTED | ISO_14755_54))
-        return;
-#endif
-
       if (reportmode)
         {
           /* mouse report from vt window */
           /* don't report release of wheel "buttons" */
-          if (ev.button >= 4 && ev.button <= 7)
+          if (ev.button >= 4)
             return;
 #ifdef MOUSE_REPORT_DOUBLECLICK
           /* only report the release of 'slow' single clicks */
           if (MEvent.button != AnyButton
               && (ev.button != MEvent.button
                   || (ev.time - MEvent.time
-                      > multiClickTime / 2)))
+                      > MULTICLICK_TIME / 2)))
             {
               MEvent.clicks = 0;
-              MEvent.button = ev.button;
+              MEvent.button = AnyButton;
               mouse_report (ev);
             }
 #else				/* MOUSE_REPORT_DOUBLECLICK */
-          MEvent.button = ev.button;
-          mouse_report (ev);
           MEvent.button = AnyButton;
-#endif /* MOUSE_REPORT_DOUBLECLICK */
+          mouse_report (ev);
+#endif				/* MOUSE_REPORT_DOUBLECLICK */
           return;
         }
-
       /*
        * dumb hack to compensate for the failure of click-and-drag
        * when overriding mouse reporting
        */
-      if (priv_modes & PrivMode_mouse_report
+      if (PrivateModes & PrivMode_mouse_report
           && bypass_keystate
           && ev.button == Button1 && MEvent.clicks <= 1)
         selection_extend (ev.x, ev.y, 0);
@@ -2196,30 +2544,156 @@ rxvt_term::button_release (XButtonEvent &ev)
           case Button3:
             selection_make (ev.time);
             break;
-
           case Button2:
-            if (IN_RANGE_EXC (ev.x, 0, vt_width) && IN_RANGE_EXC (ev.y, 0, vt_height)) // inside window?
-              selection_request (ev.time, ev.state & ModMetaMask ? Sel_Clipboard : Sel_Primary);
+            selection_request (ev.time, ev.x, ev.y);
             break;
-
 #ifdef MOUSE_WHEEL
           case Button4:
           case Button5:
             {
-              int lines;
-              page_dirn dirn;
+              int i;
+              page_dirn v;
 
-              dirn = ev.button == Button4 ? UP : DN;
-
+              v = (ev.button == Button4) ? UP : DN;
               if (ev.state & ShiftMask)
-                lines = 1;
-              else if (option (Opt_mouseWheelScrollPage))
-                lines = nrow - 1;
+                i = 1;
+              else if ((Options & Opt_mouseWheelScrollPage))
+                i = TermWin.nrow - 1;
               else
-                lines = 5;
-
+                i = 5;
 # ifdef MOUSE_SLIP_WHEELING
               if (ev.state & ControlMask)
+                {
+                  mouse_slip_wheel_speed += (v ? -1 : 1);
+                  mouse_slip_wheel_delay = SCROLLBAR_CONTINUOUS_DELAY;
+                }
+# endif
+# ifdef JUMP_MOUSE_WHEEL
+              scr_page (v, i);
+              scr_refresh (SMOOTH_REFRESH);
+              scrollbar_show (1);
+# else
+              while (i--)
+                {
+                  scr_page (v, 1);
+                  scr_refresh (SMOOTH_REFRESH);
+                  scrollbar_show (1);
+                }
+# endif
+
+            }
+            break;
+#endif
+
+        }
+    }
+#ifdef MENUBAR
+  else if (isMenuBarWindow (ev.window))
+    menubar_control (ev);
+#endif
+}
+
+
+#ifdef TRANSPARENT
+/*
+ * Check our parents are still who we think they are.
+ * Do transparency updates if required
+ */
+int
+rxvt_term::check_our_parents ()
+{
+  int             i, pchanged, aformat, have_pixmap, rootdepth;
+  unsigned long   nitems, bytes_after;
+  Atom            atype;
+  unsigned char   *prop = NULL;
+  Window          root, oldp, *list;
+  Pixmap          rootpixmap = None;
+  XWindowAttributes wattr, wrootattr;
+
+  pchanged = 0;
+
+  if (! (Options & Opt_transparent))
+    return pchanged;	/* Don't try any more */
+
+  XGetWindowAttributes (display->display, display->root, &wrootattr);
+  rootdepth = wrootattr.depth;
+
+  XGetWindowAttributes (display->display, TermWin.parent[0], &wattr);
+  if (rootdepth != wattr.depth)
+    {
+      if (am_transparent)
+        {
+          pchanged = 1;
+          XSetWindowBackground (display->display, TermWin.vt,
+                               PixColors[Color_bg]);
+          am_transparent = am_pixmap_trans = 0;
+        }
+      return pchanged;	/* Don't try any more */
+    }
+
+  /* Get all X ops out of the queue so that our information is up-to-date. */
+  XSync (display->display, False);
+
+  /*
+   * Make the frame window set by the window manager have
+   * the root background. Some window managers put multiple nested frame
+   * windows for each client, so we have to take care about that.
+   */
+  i = (xa[XA_XROOTPMAPID] != 0
+       && (XGetWindowProperty (display->display, display->root, xa[XA_XROOTPMAPID],
+                              0L, 1L, False, XA_PIXMAP, &atype, &aformat,
+                              &nitems, &bytes_after, &prop) == Success));
+  if (!i || prop == NULL)
+    have_pixmap = 0;
+  else
+    {
+      have_pixmap = 1;
+      rootpixmap = * ((Pixmap *)prop);
+      XFree (prop);
+    }
+  if (have_pixmap)
+    {
+      /*
+       * Copy display->root pixmap transparency
+       */
+      int             sx, sy, nx, ny;
+      unsigned int    nw, nh;
+      Window          cr;
+      XImage         *image;
+      GC              gc;
+      XGCValues       gcvalue;
+
+      XTranslateCoordinates (display->display, TermWin.parent[0], display->root,
+                            0, 0, &sx, &sy, &cr);
+      nw = (unsigned int)szHint.width;
+      nh = (unsigned int)szHint.height;
+      nx = ny = 0;
+      if (sx < 0)
+        {
+          nw += sx;
+          nx = -sx;
+          sx = 0;
+        }
+      if (sy < 0)
+        {
+          nh += sy;
+          ny = -sy;
+          sy = 0;
+        }
+      MIN_IT (nw, (unsigned int) (wrootattr.width - sx));
+      MIN_IT (nh, (unsigned int) (wrootattr.height - sy));
+      allowedxerror = -1;
+      image = XGetImage (display->display, rootpixmap, sx, sy, nw, nh, AllPlanes,
+                        ZPixmap);
+      /* XXX: handle BadMatch - usually because we're outside the pixmap */
+      /* XXX: may need a delay here? */
+      allowedxerror = 0;
+      if (image == NULL)
+        {
+          if (am_transparent && am_pixmap_trans)
+            {
+              pchanged = 1;
+              if (TermWin.pixmap != None)
                 {
                   mouse_slip_wheel_speed += dirn;
                   clamp_it (mouse_slip_wheel_speed, -nrow, nrow);
@@ -4119,18 +4593,15 @@ rxvt_term::set_cursor_style (int style)
   if (!IN_RANGE_INC (style, 0, 6))
     return;
 
-  if (style == 0)
-    style = 1;
-
-  cursor_type = (style - 1) / 2;
-  set_option (Opt_cursorUnderline, cursor_type == 1);
-
-#ifdef CURSOR_BLINK
-  set_option (Opt_cursorBlink, style & 1);
-  cursor_blink_reset ();
-#endif
-
-  want_refresh = 1;
+  if (cmd == 'Q')
+    {		/* query graphics */
+      tt_printf ("\033G0\n");	/* no graphics */
+      return;
+    }
+  /* swallow other graphics sequences until terminating ':' */
+  do
+    ch = cmd_getc ();
+  while (ch != ':');
 }
 /*}}} */
 
