@@ -112,7 +112,7 @@
 #define COLOR_CURSOR_BACKGROUND	NULL	/* if NULL, use foreground colour */
 
 /*
- * Define to remove support for XCopyArea() support.  XCopyArea() is useful
+ * Define to remove support for XCopyArea () support.  XCopyArea () is useful
  * for scrolling on non-local X displays
  */
 /* #define NO_SLOW_LINK_SUPPORT */
@@ -208,13 +208,6 @@
  */
 /* #define CTRL_TAB_MAKES_META */
 /* #define MOD4_TAB_MAKES_META */
-
-/*
- * default mode switch when greek keyboard is enabled (i.e. GREEK_SUPPORT)
- */
-#ifndef GREEK_KEYBOARD_MODESWITCH
-# define GREEK_KEYBOARD_MODESWITCH XK_Mode_switch
-#endif
 
 /*--------------------------------MOUSE---------------------------------*/
 /*
