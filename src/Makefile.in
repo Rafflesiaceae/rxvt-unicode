@@ -29,8 +29,23 @@ EXEEXT = @EXEEXT@
 PERLFLAGS = @PERLFLAGS@
 PERLLIB = @PERLLIB@
 
-srcdir = @srcdir@
-VPATH = @srcdir@
+LINT = lint -DNARROWPROTO=1 $(XINC) -chapbxz
+
+srcdir =	@srcdir@
+VPATH =		@srcdir@
+.PATH:		@srcdir@
+
+top_builddir = ..
+basedir = ..
+thisdir = src
+MKDIR = @top_srcdir@/autoconf/mkinstalldirs
+
+# for developers: the following debug options may be used
+#	-DDEBUG_CMD -DDEBUG_MAIN -DDEBUG_MENU -DDEBUG_MENUARROWS
+#	-DDEBUG_MENUBAR_STACKING -DDEBUG_MENU_LAYOUT -DDEBUG_RESOURCES
+#	-DDEBUG_SCREEN -DDEBUG_SEARCH_PATH -DDEBUG_SELECT -DDEBUG_SIZE
+#	-DDEBUG_TTY -DDEBUG_TTYMODE -DDEBUG_X
+DEBUG=-DDEBUG_STRICT @DEBUG@
 
 first_rule: all
 dummy:
@@ -95,23 +110,50 @@ DEPS =  rxvt.h rxvtlib.h ${basedir}/config.h feature.h rxvtcolor.h .protos
 .C.o:
 	$(COMPILE) -c $<
 
+.C.lo:
+	$(LIBTOOL) --mode=compile $(COMPILE) -c $<
+
+.s.lo:
+	$(LIBTOOL) --mode=compile $(COMPILE) -c $<
+
+.S.lo:
+	$(LIBTOOL) --mode=compile $(COMPILE) -c $<
+
+.C.intpro:
+	@$(RMF) $@.tmp
+	@$(AWK) -f $(srcdir)/makeintprotos-awk $< > $@.tmp
+	@if $(CMP) -s $@ $@.tmp ; then : ; else $(ECHO) "$(AWK) -f $(srcdir)/makeintprotos-awk $< > $@"; $(CP) $@.tmp $@; fi
+	@$(RMF) $@.tmp
+
+.C.extpro:
+	@$(RMF) $@.tmp
+	@$(AWK) -f $(srcdir)/makeextprotos-awk $< > $@.tmp
+	@if $(CMP) -s $@ $@.tmp ; then : ; else $(ECHO) "$(AWK) -f $(srcdir)/makeextprotos-awk $< > $@"; $(CP) $@.tmp $@; fi
+	@$(RMF) $@.tmp
+
 #-------------------------------------------------------------------------
 
 all: allbin
 
-rxvt: rxvt.o $(COMMON)
-	$(LINK) -o $@ rxvt.o $(COMMON) $(LIBS) $(XLIB) $(PERLLIB)
+rxvt: version.h rxvt.o librxvt.la
+	$(LIBTOOL) --mode=link $(LINK) rxvt.o librxvt.la $(LIBS) $(XLIB) $(DLIB) -o $@
 
-rxvtd: rxvtd.o $(COMMON) $(COMMON_DAEMON)
-	$(LINK) -o $@ rxvtd.o $(COMMON) $(COMMON_DAEMON) $(LIBS) $(XLIB) $(PERLLIB)
+rxvtd: version.h rxvtd.o librxvt.la rxvtdaemon.o
+	$(LIBTOOL) --mode=link $(LINK) rxvtd.o rxvtdaemon.o librxvt.la $(LIBS) $(XLIB) $(DLIB) -o $@
 
-rxvtc: rxvtc.o $(COMMON_DAEMON)
-	$(LINK) -o $@ rxvtc.o $(COMMON_DAEMON) $(LIBS)
+rxvtc: version.h rxvtc.o rxvtdaemon.o
+	$(LIBTOOL) --mode=link $(LINK) rxvtc.o rxvtdaemon.o $(LIBS) $(DLIB) -o $@
 
 rclock: rclock.o
 	$(LINK) -o $@ rclock.o $(LIBS) $(XLIB)
 
+librxvt.la: $(LIBOBJS)
+	$(LIBTOOL) --mode=link $(LINK) -rpath $(libdir) -version-info $(LIBVERSION) $(LIBOBJS) $(LIBS) -o $@
+
 #-------------------------------------------------------------------------
+
+tags: $(SRCS) $(HDRS) $(EXTRAHDRS)
+	ctags $(SRCS) $(HDRS) $(EXTRAHDRS)
 
 tags: *.[Ch]
 	ctags *.[Ch]
@@ -192,7 +234,7 @@ ev_cpp.o: ../libev/ev_poll.c ../libev/ev_port.c ../libev/ev_select.c ../libev/ev
 
 defaultfont.h: encoding.h rxvtstl.h
 rxvtlib.h: rxvtcolor.h defaultfont.h
-rxvtdaemon.o:       rxvtdaemon.C	rxvtdaemon.h
+rxvtdaemon.o:       rxvtdaemon.C $(DEPS) rxvtdaemon.h
 rxvtd.o:            rxvtd.C     $(DEPS) rxvtdaemon.h rxvtstl.h
 rxvtc.o:            rxvtc.C     $(DEPS) rxvtdaemon.h rxvtstl.h
 

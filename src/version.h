@@ -1,3 +1,5 @@
-// VERSION _must_ be \d.\d+
-#define VERSION "9.31"
-#define DATE	"2023-01-02"
+#define VERSION "2.0"
+#define VSTRING "20000"
+#define DATE	"2004-02-29"
+#define LSMDATE	"29FEB04"
+#define LIBVERSION "2:0:0"

@@ -1,0 +1,12 @@
+#!/bin/sh
+
+# this is the configure script I use. It represents most of the features I
+# support and is a good baseline :)
+
+./configure --prefix=/opt/rxvt --enable-utmp \
+            --enable-wtmp --enable-lastlog --enable-xim --disable-strings \
+            --with-term=rxvt --enable-keepscrolling --enable-xft \
+            --enable-frills --enable-swapscreen --enable-transparency \
+            --with-codesets=eu,jp --enable-menubar \
+            --enable-cursor-blink --enable-pointer-blank --enable-text-blink \
+            --enable-plain-scroll
