@@ -155,7 +155,16 @@ template int rxvt_composite_vec::expand<wchar_t> (unicode_t c, wchar_t *);
 #endif
 
 rxvt_term::rxvt_term ()
-{
+    :
+    rootwin_ev (this, &rxvt_term::rootwin_cb),
+    termwin_ev (this, &rxvt_term::x_cb),
+    vt_ev (this, &rxvt_term::x_cb),
+#ifdef HAVE_SCROLLBARS
+    scrollbar_ev (this, &rxvt_term::x_cb),
+#endif
+#ifdef MENUBAR
+    menubar_ev (this, &rxvt_term::x_cb),
+#endif
 #ifdef CURSOR_BLINK
   cursor_blink_ev.set     <rxvt_term, &rxvt_term::cursor_blink_cb> (this); cursor_blink_ev.set (0., CURSOR_BLINK_INTERVAL);
 #endif
@@ -451,7 +460,7 @@ rxvt_term::init (int argc, const char *const *argv)
     resize_scrollbar ();      /* create and map scrollbar */
 #endif
 #if (MENUBAR_MAX)
-  if (menubar_visible (r))
+  if (menubar_visible ())
     XMapWindow (display->display, menuBar.win);
 #endif
 #ifdef TRANSPARENT

@@ -1661,9 +1661,8 @@ rxvt_term::pointer_cb (ev::timer &w, int revents)
 void
 rxvt_term::mouse_report (XButtonEvent &ev)
 {
-  int button_number, state = 0;
+  int button_number, key_state = 0;
   int x, y;
-  bool release = ev.type == ButtonRelease;
 
   x = 1 + clamp (Pixel2Col (ev.x), 0, ncol - 1);
   y = 1 + clamp (Pixel2Row (ev.y), 0, nrow - 1);
@@ -1989,11 +1988,14 @@ rxvt_term::x_cb (XEvent &ev)
         if (hidden_pointer)
           pointer_unblank ();
 #endif
-        if (!bypass_keystate
-            && ((priv_modes & PrivMode_MouseBtnEvent && ev.xbutton.state & (Button1Mask|Button2Mask|Button3Mask))
-                || priv_modes & PrivMode_MouseAnyEvent))
-          mouse_report (ev.xbutton);
-        if ((priv_modes & PrivMode_mouse_report) && !bypass_keystate)
+#if MENUBAR
+        if (isMenuBarWindow (ev.xany.window))
+          {
+            menubar_control (ev.xbutton);
+            break;
+          }
+#endif
+        if ((PrivateModes & PrivMode_mouse_report) && ! (bypass_keystate))
           break;
 
         if (ev.xany.window == vt)
