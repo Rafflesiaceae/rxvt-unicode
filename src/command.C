@@ -949,7 +949,7 @@ rxvt_term::next_char ()
         return *cmdbuf_ptr++;
 
       wchar_t wc;
-      size_t len = mbrtowc (&wc, (char *)cmdbuf_ptr, cmdbuf_endp - cmdbuf_ptr, &mbstate.mbs);
+      size_t len = mbrtowc (&wc, (char *)cmdbuf_ptr, cmdbuf_endp - cmdbuf_ptr, mbstate);
 
       if (len == (size_t)-2)
         return NOCHAR;
@@ -2371,7 +2371,7 @@ rxvt_term::process_escape_seq ()
         if (cmd_getc () == '8')
           scr_E ();
         break;
-      case ' (':
+      case '(':
         scr_charset_set (0, (unsigned int)cmd_getc ());
         break;
       case ')':
