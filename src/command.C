@@ -1261,75 +1261,30 @@ rxvt_term::key_release (XKeyEvent &ev)
 #if (MOUSE_WHEEL && MOUSE_SLIP_WHEELING) || ISO_14755 || ENABLE_PERL
   KeySym keysym;
 
-  keysym = XLookupKeysym (&ev, ev.state & ShiftMask ? 1 : 0); // sorry, only shift supported :/
-#endif
+  n = cmdbuf_ptr - cmdbuf_base;
+  s = cmdbuf_base + BUFSIZ - 1 - cmdbuf_endp;
 
-#if ENABLE_FRILLS || ISO_14755
-  // ISO 14755 support
-  if (iso14755buf)
-    if (iso14755buf & ISO_14755_52)
-      {
-# if ISO_14755
-        scr_overlay_off ();
-# endif
-# if ISO_14755
-        // iso14755 part 5.2 handling: release time
-        // first: controls
-        if ((ev.state & ControlMask)
-             && ((keysym >= 0x40 && keysym <= 0x5f)
-                 || (keysym >= 0x61 && keysym <= 0x7f)))
-          {
-            iso14755buf = ISO_14755_51 | 0x2400 | (keysym & 0x1f);
-            commit_iso14755 ();
+  if (n > 0 && s < count)
+    {
+      MEMMOVE (cmdbuf_base, cmdbuf_ptr,
+              (unsigned int) (cmdbuf_endp - cmdbuf_ptr));
+      cmdbuf_ptr = cmdbuf_base;
+      cmdbuf_endp -= n;
+      s += n;
+    }
 
-            return;
-          }
+  if (count > s)
+    {
+      rxvt_print_error ("data loss: cmd_write too large");
+      count = s;
+    }
 
-        for (unsigned short *i = iso14755_symtab; i[0]; i += 2)
-          if (i[0] == keysym)
-            {
-              iso14755buf = ISO_14755_51 | i[1];
-              commit_iso14755 ();
+  for (; count--;)
+    *cmdbuf_endp++ = *str++;
 
-              return;
-            }
+  cmd_parse ();
 
-        scr_bell ();
-# endif
-        iso14755buf = 0;
-
-        return;
-      }
-    else if ((ev.state & (ShiftMask | ControlMask)) != (ShiftMask | ControlMask))
-      {
-# if ISO_14755
-        scr_overlay_off ();
-# endif
-        if (iso14755buf & ISO_14755_51)
-          commit_iso14755 ();
-#if ISO_14755
-        else if (option (Opt_iso14755_52) && iso14755buf & ISO_14755_STARTED)
-          {
-            iso14755buf = ISO_14755_52; // iso14755 part 5.2: remember empty begin/end pair
-
-            scr_overlay_new (0, -1, sizeof ("KEYCAP PICTURE INSERT MODE") - 1, 1);
-            scr_overlay_set (0, 0, "KEYCAP PICTURE INSERT MODE");
-          }
-# endif
-        else
-          iso14755buf = 0;
-      }
-#endif
-
-  if (HOOK_INVOKE ((this, HOOK_KEY_RELEASE, DT_XEVENT, &ev, DT_INT, keysym, DT_END)))
-    return;
-
-#if defined(MOUSE_WHEEL) && defined(MOUSE_SLIP_WHEELING)
-  if (!(ev.state & ControlMask))
-    slip_wheel_ev.stop ();
-  else if (keysym == XK_Control_L || keysym == XK_Control_R)
-    mouse_slip_wheel_speed = 0;
-#endif
+  return 0;
 }
 
 void
@@ -1588,21 +1543,9 @@ rxvt_term::pty_fill ()
       cmdbuf_endp += r;
       return true;
     }
-  else if (r < 0 && (errno == EAGAIN || errno == EINTR))
-    {
-#if LINUX_YIELD_HACK
-      if (display->is_local)
-        event_handler.yield_ev.start ();
-#endif
-    }
-  else
-    {
-      pty_ev.stop ();
-
-      if (!option (Opt_hold))
-        destroy ();
-    }
-
+  else if (n < 0 && errno != EAGAIN)
+    destroy ();
+  
   return false;
 }
 
@@ -1619,7 +1562,116 @@ rxvt_term::pty_cb (ev::io &w, int revents)
   if (revents & ev::WRITE)
     pty_write ();
 
-  refresh_check ();
+          if (cmd_parse ())
+            break;
+        }
+    }
+}
+
+bool
+rxvt_term::cmd_parse ()
+{
+  bool flag = false;
+  uint32_t ch = NOCHAR;
+
+  for (;;)
+    {
+      if (ch == NOCHAR)
+        ch = next_char ();
+
+      if (ch == NOCHAR) // TODO: improve
+        break;
+
+      if (ch >= ' ' || ch == '\t' || ch == '\n' || ch == '\r')
+        {
+          /* Read a text string from the input buffer */
+          uint32_t buf[BUFSIZ];
+          bool refreshnow = false;
+          int nlines = 0;
+          uint32_t *str = buf;
+
+          *str++ = ch;
+
+          for (;;)
+            {
+              ch = next_char ();
+
+              if (ch == NOCHAR || (ch < ' ' && ch != '\t' && ch != '\n' && ch != '\r'))
+                break;
+              else
+                {
+                  *str++ = ch;
+
+                  if (ch == '\n')
+                    {
+                      nlines++;
+                      refresh_count++;
+
+                      if (! (Options & Opt_jumpScroll)
+                          || (refresh_count >= (refresh_limit * (TermWin.nrow - 1))))
+                        {
+                          refreshnow = true;
+                          flag = false;
+                          ch = NOCHAR;
+                          break;
+                        }
+
+                      // scr_add_lines only works for nlines < TermWin.nrow - 1.
+                      if (nlines >= TermWin.nrow - 1)
+                        {
+                          scr_add_lines (buf, nlines, str - buf);
+                          nlines = 0;
+                          str = buf;
+                        }
+                    }
+
+                  if (str >= buf + BUFSIZ)
+                    {
+                      ch = NOCHAR;
+                      break;
+                    }
+                }
+            }
+
+          scr_add_lines (buf, nlines, str - buf);
+
+          /*
+           * If there have been a lot of new lines, then update the screen
+           * What the heck I'll cheat and only refresh less than every page-full.
+           * the number of pages between refreshes is refresh_limit, which
+           * is incremented here because we must be doing flat-out scrolling.
+           *
+           * refreshing should be correct for small scrolls, because of the
+           * time-out
+           */
+          if (refreshnow)
+            {
+              if ((Options & Opt_jumpScroll) && refresh_limit < REFRESH_PERIOD)
+                refresh_limit++;
+
+              scr_refresh (refresh_type);
+            }
+
+        }
+      else
+        {
+          switch (ch)
+            {
+              default:
+                process_nonprinting (ch);
+                break;
+              case C0_ESC:	/* escape char */
+                process_escape_seq ();
+                break;
+                /*case 0x9b: */	/* CSI */
+                /*  process_csi_seq (); */
+            }
+
+          ch = NOCHAR;
+        }
+    }
+
+  return flag;
 }
 
 void ecb_cold

@@ -8,7 +8,14 @@
           crashes when you kill your input method (xterm et al. also crash).
         - fix bugs in x flushing, causing an empty screen after startup
         - fix various memleaks in rxvtd.
-        - countless minor bugfixes.
+        - fix a bug that kept escape codes to be generated for some
+          keysyms that also have string translations, when not --enable-xim.
+          reported by joel reed.
+        - re-enabled esc-seq. for font-switching (\033 ] 50 ; <fontset> \007).
+        - re-enabled menubar (experimental!).
+        - fix bug in locale-handling that kept the correct locale from
+          being selected.
+        - implemented esc-seq. to switch locales (\033 ] 9 ; <locale> \007).
         - removed greek support.
 
 1.8  Mon Feb  2 20:09:18 CET 2004

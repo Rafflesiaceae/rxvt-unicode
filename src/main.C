@@ -240,8 +240,14 @@ rxvt_term::~rxvt_term ()
 
   if (display)
     {
-      selection_clear ();
-      selection_clear (true);
+      if (TermWin.parent[0])
+        XDestroyWindow (display->display, TermWin.parent[0]);
+#if defined(MENUBAR) && (MENUBAR_MAX > 1)
+      if (menuBar.win)
+        XDestroyWindow (display->display, menuBar.win);
+      delete menuBar.drawable;
+#endif
+    }
 
 #if USE_XIM
       im_destroy ();
@@ -436,7 +442,7 @@ rxvt_term::init (int argc, const char *const *argv)
 
   set_locale ("");
 
-#if (MENUBAR_MAX)
+#if MENUBAR_MAX
   menubar_read (rs[Rs_menu]);
 #endif
 #ifdef HAVE_SCROLLBARS
