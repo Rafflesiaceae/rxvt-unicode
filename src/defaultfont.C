@@ -692,7 +692,6 @@ rxvt_font_x11::draw (int x, int y,
 
   XGCValues v;
   v.foreground = r->PixColors[fg];
-  v.background = r->PixColors[bg];
   v.font = f->fid;
 
   if (enc2b)
@@ -701,8 +700,9 @@ rxvt_font_x11::draw (int x, int y,
 
       if (bg == Color_bg && !slow)
         {
-          XChangeGC (DISPLAY, GC, GCForeground | GCBackground | GCFont, &v);
-          XDrawImageString16 (DISPLAY, DRAWABLE, GC, x, y + base, xc, len);
+          v.background = r->PixColors[bg];
+          XChangeGC (d.display->display, TGC, GCForeground | GCBackground | GCFont, &v);
+          XDrawImageString16 (d.display->display, d, TGC, x, y + base, xc, len);
         }
       else
         {
@@ -732,8 +732,9 @@ rxvt_font_x11::draw (int x, int y,
 
       if (bg == Color_bg && !slow)
         {
-          XChangeGC (DISPLAY, GC, GCForeground | GCBackground | GCFont, &v);
-          XDrawImageString (DISPLAY, DRAWABLE, GC, x, y + base, xc, len);
+          v.background = r->PixColors[bg];
+          XChangeGC (d.display->display, TGC, GCForeground | GCBackground | GCFont, &v);
+          XDrawImageString (d.display->display, d, TGC, x, y + base, xc, len);
         }
       else
         {
