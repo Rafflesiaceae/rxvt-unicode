@@ -23,7 +23,7 @@
 
 #include <sys/time.h>
 
-#if 1 // older unices need these includes for select(2)
+#if 1 // older unices need these includes for select (2)
 # include <unistd.h>
 # include <sys/types.h>
 #endif
@@ -51,7 +51,7 @@ static struct tw0 : time_watcher
       abort ();
     }
 
-    tw0()
+    tw0 ()
         : time_watcher (this, &tw0::cb)
     { }}
 tw0;
@@ -168,7 +168,7 @@ void io_manager::loop ()
                     {
                       double diff = next->at - NOW;
                       tval.tv_sec  = (int)diff;
-                      tval.tv_usec = (int)((diff - tval.tv_sec) * 1000000);
+                      tval.tv_usec = (int) ((diff - tval.tv_sec) * 1000000);
                       to = &tval;
                     }
                   break;
@@ -201,7 +201,7 @@ void io_manager::loop ()
 #endif
 
 #if IOM_IO
-      fd_set rfd, wfd, efd;
+      fd_set rfd, wfd;
 
       FD_ZERO (&rfd);
       FD_ZERO (&wfd);
@@ -220,7 +220,7 @@ void io_manager::loop ()
       if (!to && !fds) //TODO: also check idle_watchers and check_watchers
         break; // no events
 
-      fds = select (fds, &rfd, &wfd, &efd, to);
+      fds = select (fds, &rfd, &wfd, NULL, to);
 # if IOM_TIME
       set_now ();
 # endif
