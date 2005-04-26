@@ -19,7 +19,7 @@
     GNU General Public License for more details.
  
     You should have received a copy of the GNU General Public License
-    along with gvpe; if not, write to the Free Software
+    along with this program; if not, write to the Free Software
     Foundation, Inc. 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
@@ -36,34 +36,43 @@ struct callback<R ()>
 {
   typedef R (*ptr_type)(void *self);
 
-  template<class K, R (K::*method)()>
-  void set (K *object)
-  {
-    self = object;
-    func = thunk<K, method>;
-  }
+  void *obj;
+  R (object::*meth) ();
+
+  /* a proxy is a kind of recipe on how to call a specific class method	*/
+  struct proxy_base {
+    virtual R call (void *obj, R (object::*meth) ()) = 0;
+  };
+  template<class O1, class O2>
+  struct proxy : proxy_base {
+    virtual R call (void *obj, R (object::*meth) ())
+      {
+        ((reinterpret_cast<O1 *> (obj)) ->* (reinterpret_cast<R (O2::*) ()> (meth)))
+          ();
+      }
+  };
+
+  proxy_base *prxy;
+
+public:
+  template<class O1, class O2>
+  callback0 (O1 *object, R (O2::*method) ())
+    {
+      static proxy<O1,O2> p;
+      obj  = reinterpret_cast<void *> (object);
+      meth = reinterpret_cast<R (object::*) ()> (method);
+      prxy = &p;
+    }
 
   R call () const
-  {
-    return func (self);
-  }
+    {
+      return prxy->call (obj, meth);
+    }
 
-  R operator ()() const
-  {
-    return call ();
-  }
-
-private:
-
-  void *self;
-  ptr_type func;
-
-  template<class klass, R (klass::*method)()>
-  static R thunk (void *self)
-  {
-    klass *obj = static_cast<klass *>(self);
-    return (obj->*method) ();
-  }
+  R operator () () const
+    {
+      return call ();
+    }
 };
 
 template<class R, class A1>
@@ -71,34 +80,43 @@ struct callback<R (A1)>
 {
   typedef R (*ptr_type)(void *self, A1);
 
-  template<class K, R (K::*method)(A1)>
-  void set (K *object)
-  {
-    self = object;
-    func = thunk<K, method>;
-  }
+  void *obj;
+  R (object::*meth) (A1);
+
+  /* a proxy is a kind of recipe on how to call a specific class method	*/
+  struct proxy_base {
+    virtual R call (void *obj, R (object::*meth) (A1), A1 a1) = 0;
+  };
+  template<class O1, class O2>
+  struct proxy : proxy_base {
+    virtual R call (void *obj, R (object::*meth) (A1), A1 a1)
+      {
+        ((reinterpret_cast<O1 *> (obj)) ->* (reinterpret_cast<R (O2::*) (A1)> (meth)))
+          (a1);
+      }
+  };
+
+  proxy_base *prxy;
+
+public:
+  template<class O1, class O2>
+  callback1 (O1 *object, R (O2::*method) (A1))
+    {
+      static proxy<O1,O2> p;
+      obj  = reinterpret_cast<void *> (object);
+      meth = reinterpret_cast<R (object::*) (A1)> (method);
+      prxy = &p;
+    }
 
   R call (A1 a1) const
-  {
-    return func (self, a1);
-  }
+    {
+      return prxy->call (obj, meth, a1);
+    }
 
-  R operator ()(A1 a1) const
-  {
-    return call (a1);
-  }
-
-private:
-
-  void *self;
-  ptr_type func;
-
-  template<class klass, R (klass::*method)(A1)>
-  static R thunk (void *self, A1 a1)
-  {
-    klass *obj = static_cast<klass *>(self);
-    return (obj->*method) (a1);
-  }
+  R operator () (A1 a1) const
+    {
+      return call (a1);
+    }
 };
 
 template<class R, class A1, class A2>
@@ -106,34 +124,43 @@ struct callback<R (A1, A2)>
 {
   typedef R (*ptr_type)(void *self, A1, A2);
 
-  template<class K, R (K::*method)(A1, A2)>
-  void set (K *object)
-  {
-    self = object;
-    func = thunk<K, method>;
-  }
+  void *obj;
+  R (object::*meth) (A1, A2);
+
+  /* a proxy is a kind of recipe on how to call a specific class method	*/
+  struct proxy_base {
+    virtual R call (void *obj, R (object::*meth) (A1, A2), A1 a1, A2 a2) = 0;
+  };
+  template<class O1, class O2>
+  struct proxy : proxy_base {
+    virtual R call (void *obj, R (object::*meth) (A1, A2), A1 a1, A2 a2)
+      {
+        ((reinterpret_cast<O1 *> (obj)) ->* (reinterpret_cast<R (O2::*) (A1, A2)> (meth)))
+          (a1, a2);
+      }
+  };
+
+  proxy_base *prxy;
+
+public:
+  template<class O1, class O2>
+  callback2 (O1 *object, R (O2::*method) (A1, A2))
+    {
+      static proxy<O1,O2> p;
+      obj  = reinterpret_cast<void *> (object);
+      meth = reinterpret_cast<R (object::*) (A1, A2)> (method);
+      prxy = &p;
+    }
 
   R call (A1 a1, A2 a2) const
-  {
-    return func (self, a1, a2);
-  }
+    {
+      return prxy->call (obj, meth, a1, a2);
+    }
 
-  R operator ()(A1 a1, A2 a2) const
-  {
-    return call (a1, a2);
-  }
-
-private:
-
-  void *self;
-  ptr_type func;
-
-  template<class klass, R (klass::*method)(A1, A2)>
-  static R thunk (void *self, A1 a1, A2 a2)
-  {
-    klass *obj = static_cast<klass *>(self);
-    return (obj->*method) (a1, a2);
-  }
+  R operator () (A1 a1, A2 a2) const
+    {
+      return call (a1, a2);
+    }
 };
 
 template<class R, class A1, class A2, class A3>
@@ -141,34 +168,43 @@ struct callback<R (A1, A2, A3)>
 {
   typedef R (*ptr_type)(void *self, A1, A2, A3);
 
-  template<class K, R (K::*method)(A1, A2, A3)>
-  void set (K *object)
-  {
-    self = object;
-    func = thunk<K, method>;
-  }
+  void *obj;
+  R (object::*meth) (A1, A2, A3);
+
+  /* a proxy is a kind of recipe on how to call a specific class method	*/
+  struct proxy_base {
+    virtual R call (void *obj, R (object::*meth) (A1, A2, A3), A1 a1, A2 a2, A3 a3) = 0;
+  };
+  template<class O1, class O2>
+  struct proxy : proxy_base {
+    virtual R call (void *obj, R (object::*meth) (A1, A2, A3), A1 a1, A2 a2, A3 a3)
+      {
+        ((reinterpret_cast<O1 *> (obj)) ->* (reinterpret_cast<R (O2::*) (A1, A2, A3)> (meth)))
+          (a1, a2, a3);
+      }
+  };
+
+  proxy_base *prxy;
+
+public:
+  template<class O1, class O2>
+  callback3 (O1 *object, R (O2::*method) (A1, A2, A3))
+    {
+      static proxy<O1,O2> p;
+      obj  = reinterpret_cast<void *> (object);
+      meth = reinterpret_cast<R (object::*) (A1, A2, A3)> (method);
+      prxy = &p;
+    }
 
   R call (A1 a1, A2 a2, A3 a3) const
-  {
-    return func (self, a1, a2, a3);
-  }
+    {
+      return prxy->call (obj, meth, a1, a2, a3);
+    }
 
-  R operator ()(A1 a1, A2 a2, A3 a3) const
-  {
-    return call (a1, a2, a3);
-  }
-
-private:
-
-  void *self;
-  ptr_type func;
-
-  template<class klass, R (klass::*method)(A1, A2, A3)>
-  static R thunk (void *self, A1 a1, A2 a2, A3 a3)
-  {
-    klass *obj = static_cast<klass *>(self);
-    return (obj->*method) (a1, a2, a3);
-  }
+  R operator () (A1 a1, A2 a2, A3 a3) const
+    {
+      return call (a1, a2, a3);
+    }
 };
 
 template<class R, class A1, class A2, class A3, class A4>
@@ -176,34 +212,43 @@ struct callback<R (A1, A2, A3, A4)>
 {
   typedef R (*ptr_type)(void *self, A1, A2, A3, A4);
 
-  template<class K, R (K::*method)(A1, A2, A3, A4)>
-  void set (K *object)
-  {
-    self = object;
-    func = thunk<K, method>;
-  }
+  void *obj;
+  R (object::*meth) (A1, A2, A3, A4);
+
+  /* a proxy is a kind of recipe on how to call a specific class method	*/
+  struct proxy_base {
+    virtual R call (void *obj, R (object::*meth) (A1, A2, A3, A4), A1 a1, A2 a2, A3 a3, A4 a4) = 0;
+  };
+  template<class O1, class O2>
+  struct proxy : proxy_base {
+    virtual R call (void *obj, R (object::*meth) (A1, A2, A3, A4), A1 a1, A2 a2, A3 a3, A4 a4)
+      {
+        ((reinterpret_cast<O1 *> (obj)) ->* (reinterpret_cast<R (O2::*) (A1, A2, A3, A4)> (meth)))
+          (a1, a2, a3, a4);
+      }
+  };
+
+  proxy_base *prxy;
+
+public:
+  template<class O1, class O2>
+  callback4 (O1 *object, R (O2::*method) (A1, A2, A3, A4))
+    {
+      static proxy<O1,O2> p;
+      obj  = reinterpret_cast<void *> (object);
+      meth = reinterpret_cast<R (object::*) (A1, A2, A3, A4)> (method);
+      prxy = &p;
+    }
 
   R call (A1 a1, A2 a2, A3 a3, A4 a4) const
-  {
-    return func (self, a1, a2, a3, a4);
-  }
+    {
+      return prxy->call (obj, meth, a1, a2, a3, a4);
+    }
 
-  R operator ()(A1 a1, A2 a2, A3 a3, A4 a4) const
-  {
-    return call (a1, a2, a3, a4);
-  }
-
-private:
-
-  void *self;
-  ptr_type func;
-
-  template<class klass, R (klass::*method)(A1, A2, A3, A4)>
-  static R thunk (void *self, A1 a1, A2 a2, A3 a3, A4 a4)
-  {
-    klass *obj = static_cast<klass *>(self);
-    return (obj->*method) (a1, a2, a3, a4);
-  }
+  R operator () (A1 a1, A2 a2, A3 a3, A4 a4) const
+    {
+      return call (a1, a2, a3, a4);
+    }
 };
 
 template<class R, class A1, class A2, class A3, class A4, class A5>
@@ -211,34 +256,43 @@ struct callback<R (A1, A2, A3, A4, A5)>
 {
   typedef R (*ptr_type)(void *self, A1, A2, A3, A4, A5);
 
-  template<class K, R (K::*method)(A1, A2, A3, A4, A5)>
-  void set (K *object)
-  {
-    self = object;
-    func = thunk<K, method>;
-  }
+  void *obj;
+  R (object::*meth) (A1, A2, A3, A4, A5);
+
+  /* a proxy is a kind of recipe on how to call a specific class method	*/
+  struct proxy_base {
+    virtual R call (void *obj, R (object::*meth) (A1, A2, A3, A4, A5), A1 a1, A2 a2, A3 a3, A4 a4, A5 a5) = 0;
+  };
+  template<class O1, class O2>
+  struct proxy : proxy_base {
+    virtual R call (void *obj, R (object::*meth) (A1, A2, A3, A4, A5), A1 a1, A2 a2, A3 a3, A4 a4, A5 a5)
+      {
+        ((reinterpret_cast<O1 *> (obj)) ->* (reinterpret_cast<R (O2::*) (A1, A2, A3, A4, A5)> (meth)))
+          (a1, a2, a3, a4, a5);
+      }
+  };
+
+  proxy_base *prxy;
+
+public:
+  template<class O1, class O2>
+  callback5 (O1 *object, R (O2::*method) (A1, A2, A3, A4, A5))
+    {
+      static proxy<O1,O2> p;
+      obj  = reinterpret_cast<void *> (object);
+      meth = reinterpret_cast<R (object::*) (A1, A2, A3, A4, A5)> (method);
+      prxy = &p;
+    }
 
   R call (A1 a1, A2 a2, A3 a3, A4 a4, A5 a5) const
-  {
-    return func (self, a1, a2, a3, a4, a5);
-  }
+    {
+      return prxy->call (obj, meth, a1, a2, a3, a4, a5);
+    }
 
-  R operator ()(A1 a1, A2 a2, A3 a3, A4 a4, A5 a5) const
-  {
-    return call (a1, a2, a3, a4, a5);
-  }
-
-private:
-
-  void *self;
-  ptr_type func;
-
-  template<class klass, R (klass::*method)(A1, A2, A3, A4, A5)>
-  static R thunk (void *self, A1 a1, A2 a2, A3 a3, A4 a4, A5 a5)
-  {
-    klass *obj = static_cast<klass *>(self);
-    return (obj->*method) (a1, a2, a3, a4, a5);
-  }
+  R operator () (A1 a1, A2 a2, A3 a3, A4 a4, A5 a5) const
+    {
+      return call (a1, a2, a3, a4, a5);
+    }
 };
 
 template<class R, class A1, class A2, class A3, class A4, class A5, class A6>
@@ -246,34 +300,43 @@ struct callback<R (A1, A2, A3, A4, A5, A6)>
 {
   typedef R (*ptr_type)(void *self, A1, A2, A3, A4, A5, A6);
 
-  template<class K, R (K::*method)(A1, A2, A3, A4, A5, A6)>
-  void set (K *object)
-  {
-    self = object;
-    func = thunk<K, method>;
-  }
+  void *obj;
+  R (object::*meth) (A1, A2, A3, A4, A5, A6);
+
+  /* a proxy is a kind of recipe on how to call a specific class method	*/
+  struct proxy_base {
+    virtual R call (void *obj, R (object::*meth) (A1, A2, A3, A4, A5, A6), A1 a1, A2 a2, A3 a3, A4 a4, A5 a5, A6 a6) = 0;
+  };
+  template<class O1, class O2>
+  struct proxy : proxy_base {
+    virtual R call (void *obj, R (object::*meth) (A1, A2, A3, A4, A5, A6), A1 a1, A2 a2, A3 a3, A4 a4, A5 a5, A6 a6)
+      {
+        ((reinterpret_cast<O1 *> (obj)) ->* (reinterpret_cast<R (O2::*) (A1, A2, A3, A4, A5, A6)> (meth)))
+          (a1, a2, a3, a4, a5, a6);
+      }
+  };
+
+  proxy_base *prxy;
+
+public:
+  template<class O1, class O2>
+  callback6 (O1 *object, R (O2::*method) (A1, A2, A3, A4, A5, A6))
+    {
+      static proxy<O1,O2> p;
+      obj  = reinterpret_cast<void *> (object);
+      meth = reinterpret_cast<R (object::*) (A1, A2, A3, A4, A5, A6)> (method);
+      prxy = &p;
+    }
 
   R call (A1 a1, A2 a2, A3 a3, A4 a4, A5 a5, A6 a6) const
-  {
-    return func (self, a1, a2, a3, a4, a5, a6);
-  }
+    {
+      return prxy->call (obj, meth, a1, a2, a3, a4, a5, a6);
+    }
 
-  R operator ()(A1 a1, A2 a2, A3 a3, A4 a4, A5 a5, A6 a6) const
-  {
-    return call (a1, a2, a3, a4, a5, a6);
-  }
-
-private:
-
-  void *self;
-  ptr_type func;
-
-  template<class klass, R (klass::*method)(A1, A2, A3, A4, A5, A6)>
-  static R thunk (void *self, A1 a1, A2 a2, A3 a3, A4 a4, A5 a5, A6 a6)
-  {
-    klass *obj = static_cast<klass *>(self);
-    return (obj->*method) (a1, a2, a3, a4, a5, a6);
-  }
+  R operator () (A1 a1, A2 a2, A3 a3, A4 a4, A5 a5, A6 a6) const
+    {
+      return call (a1, a2, a3, a4, a5, a6);
+    }
 };
 
 template<class R, class A1, class A2, class A3, class A4, class A5, class A6, class A7>
@@ -281,34 +344,43 @@ struct callback<R (A1, A2, A3, A4, A5, A6, A7)>
 {
   typedef R (*ptr_type)(void *self, A1, A2, A3, A4, A5, A6, A7);
 
-  template<class K, R (K::*method)(A1, A2, A3, A4, A5, A6, A7)>
-  void set (K *object)
-  {
-    self = object;
-    func = thunk<K, method>;
-  }
+  void *obj;
+  R (object::*meth) (A1, A2, A3, A4, A5, A6, A7);
+
+  /* a proxy is a kind of recipe on how to call a specific class method	*/
+  struct proxy_base {
+    virtual R call (void *obj, R (object::*meth) (A1, A2, A3, A4, A5, A6, A7), A1 a1, A2 a2, A3 a3, A4 a4, A5 a5, A6 a6, A7 a7) = 0;
+  };
+  template<class O1, class O2>
+  struct proxy : proxy_base {
+    virtual R call (void *obj, R (object::*meth) (A1, A2, A3, A4, A5, A6, A7), A1 a1, A2 a2, A3 a3, A4 a4, A5 a5, A6 a6, A7 a7)
+      {
+        ((reinterpret_cast<O1 *> (obj)) ->* (reinterpret_cast<R (O2::*) (A1, A2, A3, A4, A5, A6, A7)> (meth)))
+          (a1, a2, a3, a4, a5, a6, a7);
+      }
+  };
+
+  proxy_base *prxy;
+
+public:
+  template<class O1, class O2>
+  callback7 (O1 *object, R (O2::*method) (A1, A2, A3, A4, A5, A6, A7))
+    {
+      static proxy<O1,O2> p;
+      obj  = reinterpret_cast<void *> (object);
+      meth = reinterpret_cast<R (object::*) (A1, A2, A3, A4, A5, A6, A7)> (method);
+      prxy = &p;
+    }
 
   R call (A1 a1, A2 a2, A3 a3, A4 a4, A5 a5, A6 a6, A7 a7) const
-  {
-    return func (self, a1, a2, a3, a4, a5, a6, a7);
-  }
+    {
+      return prxy->call (obj, meth, a1, a2, a3, a4, a5, a6, a7);
+    }
 
-  R operator ()(A1 a1, A2 a2, A3 a3, A4 a4, A5 a5, A6 a6, A7 a7) const
-  {
-    return call (a1, a2, a3, a4, a5, a6, a7);
-  }
-
-private:
-
-  void *self;
-  ptr_type func;
-
-  template<class klass, R (klass::*method)(A1, A2, A3, A4, A5, A6, A7)>
-  static R thunk (void *self, A1 a1, A2 a2, A3 a3, A4 a4, A5 a5, A6 a6, A7 a7)
-  {
-    klass *obj = static_cast<klass *>(self);
-    return (obj->*method) (a1, a2, a3, a4, a5, a6, a7);
-  }
+  R operator () (A1 a1, A2 a2, A3 a3, A4 a4, A5 a5, A6 a6, A7 a7) const
+    {
+      return call (a1, a2, a3, a4, a5, a6, a7);
+    }
 };
 
 template<class R, class A1, class A2, class A3, class A4, class A5, class A6, class A7, class A8>
